@@ -107,7 +107,11 @@ export const WorkoutProvider = ({ children }) => {
             const match = list.find(ex => ex.name === name);
             if (match && match.target) return match.target;
         }
-        // 2. Check History
+        // 2. Check Database
+        const dbMatch = EXERCISE_DATABASE.find(ex => ex.name === name);
+        if (dbMatch && dbMatch.target) return dbMatch.target;
+
+        // 3. Check History
         for (const w of history) {
             const match = w.exercises.find(ex => ex.name === name);
             if (match && match.target) return match.target;

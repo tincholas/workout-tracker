@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { EXERCISE_TYPES, WORKOUT_TEMPLATES } from '../store/models';
+import { EXERCISE_TYPES, WORKOUT_TEMPLATES, EXERCISE_DATABASE } from '../store/models';
 import { useWorkout } from '../store/WorkoutContext';
 import { X, Search } from 'lucide-react';
 
@@ -13,6 +13,14 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
         Object.values(WORKOUT_TEMPLATES).flat().forEach(ex => {
             if (ex && ex.name) exercises.add(ex.name);
         });
+
+        // Full Database
+        if (EXERCISE_DATABASE) {
+            EXERCISE_DATABASE.forEach(ex => {
+                if (ex && ex.name) exercises.add(ex.name);
+            });
+        }
+
         // History
         if (history) {
             history.forEach(w => w.exercises.forEach(ex => {
