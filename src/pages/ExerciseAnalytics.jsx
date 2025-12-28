@@ -35,36 +35,76 @@ export default function ExerciseAnalytics() {
     const chartData = useMemo(() => {
         if (!history || !exerciseName) return null;
 
-        // Filter workouts containing the exercise
+        // 1. Filter workouts containing the exercise
         const relevantWorkouts = history
-            .filter(w => w.exercises.some(ex => ex.name === exerciseName))
-            .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+            .filter(w => w.exercises.some(ex => ex.name === exerciseName));
 
         if (relevantWorkouts.length === 0) return null;
 
-        const labels = relevantWorkouts.map(w => {
-            const date = new Date(w.startTime);
-            return `${date.getDate()}/${date.getMonth() + 1}`;
+        // 2. Aggregate Max Weight by Date
+        const maxWeightByDate = {};
+
+        relevantWorkouts.forEach(w => {
+            const dateStr = new Date(w.startTime).toLocaleDateString();
+            const ex = w.exercises.find(e => e.name === exerciseName);
+
+            if (ex) {
+                // Find max weight in this session (ignore incomplete sets if you prefer, but usually all sets count for strength history)
+                const sessionMax = Math.max(...ex.sets.map(s => Number(s.weight) || 0));
+
+                if (!maxWeightByDate[dateStr] || sessionMax > maxWeightByDate[dateStr]) {
+                    maxWeightByDate[dateStr] = sessionMax;
+                }
+            }
         });
 
-        const maxWeights = relevantWorkouts.map(w => {
-            const ex = w.exercises.find(e => e.name === exerciseName);
-            if (!ex) return 0;
-            // Find max weight in successful sets
-            const completedSets = ex.sets.filter(s => s.completed);
-            if (completedSets.length === 0) return 0;
-            return Math.max(...completedSets.map(s => s.weight));
+        // 3. Sort Dates
+        const sortedDates = Object.keys(maxWeightByDate).sort((a, b) => {
+            // parse localized date string back to timestamp for sorting is tricky depending on locale
+            // Better to use ISO string keys for sorting, but for display we want locale.
+            // Let's rely on the fact that relevantWorkouts usually comes chronologically or we can sort by timestamps first.
+            // Actually, let's just sort the unique dates we found.
+            // A simple way is to convert the date string back to a Date object.
+            const dateA = new Date(a.split('/').reverse().join('-')); // Hacky for DD/MM/YYYY. 
+            // Better approach: Store timestamp in keys or just sort the filtered workouts first (which we did).
+            return new Date(a) - new Date(b);
         });
+
+        // Re-sorting implementation to be safer:
+        // Use a Map or Object where keys are YYYY-MM-DD for sorting, and then format for display.
+        const dateMap = new Map();
+        relevantWorkouts.forEach(w => {
+            // Use YYYY-MM-DD for consistent sorting keys
+            const d = new Date(w.startTime);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            const ex = w.exercises.find(e => e.name === exerciseName);
+            const sessionMax = ex ? Math.max(...ex.sets.map(s => Number(s.weight) || 0)) : 0;
+
+            if (!dateMap.has(key) || sessionMax > dateMap.get(key)) {
+                dateMap.set(key, sessionMax);
+            }
+        });
+
+        const sortedKeys = Array.from(dateMap.keys()).sort();
+
+        const labels = sortedKeys.map(k => {
+            const [y, m, d] = k.split('-');
+            return `${d}/${m}`;
+        });
+
+        const dataPoints = sortedKeys.map(k => dateMap.get(k));
 
         return {
             labels,
             datasets: [
                 {
                     label: 'Max Weight (kg)',
-                    data: maxWeights,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    data: dataPoints,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.5)',
                     tension: 0.3,
+                    pointRadius: 4,
                 },
             ],
         };
