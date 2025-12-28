@@ -1,10 +1,10 @@
 import React from 'react';
 import SetRow from './SetRow';
-import { MoreVertical, Repeat } from 'lucide-react';
+import { MoreVertical, Repeat, Plus, Minus } from 'lucide-react';
 import { useWorkout } from '../store/WorkoutContext';
 
 export default function ExerciseCard({ exercise, onSwap }) {
-    const { updateSet } = useWorkout();
+    const { updateSet, addSet, removeSet } = useWorkout();
 
     const handleSetUpdate = (setId, updates) => {
         updateSet(exercise.id, setId, updates);
@@ -32,13 +32,37 @@ export default function ExerciseCard({ exercise, onSwap }) {
             </div>
 
             {exercise.sets.map((set, index) => (
-                <SetRow
-                    key={set.id}
-                    set={set}
-                    index={index}
-                    onUpdate={(updates) => handleSetUpdate(set.id, updates)}
-                />
+                <React.Fragment key={set.id}>
+                    <SetRow
+                        set={set}
+                        index={index}
+                        onUpdate={(updates) => handleSetUpdate(set.id, updates)}
+                    />
+                    {/* Optional: Add a delete set button visible on long press or similar? For now, let's just use the main controls at the bottom */}
+                </React.Fragment>
             ))}
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', justifyContent: 'flex-end' }}>
+                <button
+                    className="btn"
+                    style={{ padding: '0.5rem', height: '32px', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)' }}
+                    onClick={() => {
+                        if (exercise.sets.length > 0) {
+                            removeSet(exercise.id, exercise.sets[exercise.sets.length - 1].id)
+                        }
+                    }}
+                    disabled={exercise.sets.length === 0}
+                >
+                    <Minus size={16} /> Set
+                </button>
+                <button
+                    className="btn"
+                    style={{ padding: '0.5rem', height: '32px', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)' }}
+                    onClick={() => addSet(exercise.id)}
+                >
+                    <Plus size={16} /> Set
+                </button>
+            </div>
         </div>
     );
 }

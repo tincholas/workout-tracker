@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { useWorkout } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import ExerciseCard from '../components/ExerciseCard';
+import ExercisePickerModal from '../components/ExercisePickerModal';
 import { Plus, Save, X } from 'lucide-react';
 
 export default function WorkoutSession() {
     const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise } = useWorkout();
     const navigate = useNavigate();
-    const [showSwapModal, setShowSwapModal] = useState(null); // stores exerciseId to swap
-    const [swapName, setSwapName] = useState('');
+
+    // Modal State
+    const [pickerMode, setPickerMode] = useState(null); // 'ADD' or 'SWAP'
+    const [swapTargetId, setSwapTargetId] = useState(null);
 
     if (!activeWorkout) {
         return (
@@ -26,17 +29,23 @@ export default function WorkoutSession() {
         }
     };
 
-    const handleSwapSubmit = (e) => {
-        e.preventDefault();
-        if (swapName && showSwapModal) {
-            swapExercise(showSwapModal, swapName, 'Custom'); // Defaulting target for now
-            setShowSwapModal(null);
-            setSwapName('');
+    const openSwap = (id) => {
+        setSwapTargetId(id);
+        setPickerMode('SWAP');
+    };
+
+    const handleSelectExercise = (name) => {
+        if (pickerMode === 'ADD') {
+            addExercise(name, 'Custom');
+        } else if (pickerMode === 'SWAP' && swapTargetId) {
+            swapExercise(swapTargetId, name, 'Custom');
         }
+        setPickerMode(null);
+        setSwapTargetId(null);
     };
 
     return (
-        <div style={{ padding: 'var(--space-md)' }}>
+        <div style={{ padding: 'var(--space-md)', paddingBottom: '100px' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
                 <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{activeWorkout.name}</h1>
@@ -55,43 +64,25 @@ export default function WorkoutSession() {
                 <ExerciseCard
                     key={ex.id}
                     exercise={ex}
-                    onSwap={(id) => setShowSwapModal(id)}
+                    onSwap={(id) => openSwap(id)}
                 />
             ))}
 
             {/* Add Exercise Button */}
             <button
                 className="btn"
-                style={{ width: '100%', borderStyle: 'dashed', marginTop: '1rem' }}
-                onClick={() => addExercise('New Exercise', 'Custom')}
+                style={{ width: '100%', borderStyle: 'dashed', marginTop: '1rem', padding: '1rem' }}
+                onClick={() => setPickerMode('ADD')}
             >
                 <Plus size={20} /> Add Exercise
             </button>
 
-            {/* Swap Modal */}
-            {showSwapModal && (
-                <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 200,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', p: '1rem'
-                }}>
-                    <div className="card" style={{ width: '90%', maxWidth: '400px' }}>
-                        <h3>Swap Exercise</h3>
-                        <form onSubmit={handleSwapSubmit}>
-                            <input
-                                className="input"
-                                autoFocus
-                                placeholder="New Exercise Name"
-                                value={swapName}
-                                onChange={e => setSwapName(e.target.value)}
-                                style={{ marginBottom: '1rem' }}
-                            />
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                <button type="button" className="btn" style={{ flex: 1 }} onClick={() => setShowSwapModal(null)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Swap</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+            {/* Picker Modal */}
+            {pickerMode && (
+                <ExercisePickerModal
+                    onClose={() => setPickerMode(null)}
+                    onSelect={handleSelectExercise}
+                />
             )}
         </div>
     );

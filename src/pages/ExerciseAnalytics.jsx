@@ -28,7 +28,9 @@ export default function ExerciseAnalytics() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const exerciseName = searchParams.get('exercise');
-    const { history } = useWorkout();
+    const { history, renameExercise } = useWorkout();
+    const [isEditing, setIsEditing] = React.useState(false);
+    const [editName, setEditName] = React.useState(exerciseName || '');
 
     const chartData = useMemo(() => {
         if (!history || !exerciseName) return null;
@@ -87,6 +89,18 @@ export default function ExerciseAnalytics() {
         }
     };
 
+    const handleRename = (e) => {
+        e.preventDefault();
+        if (editName && editName !== exerciseName) {
+            if (confirm(`Rename "${exerciseName}" to "${editName}" globally?`)) {
+                renameExercise(exerciseName, editName);
+                // Update URL without reload to reflect new name
+                navigate(`/analytics?exercise=${encodeURIComponent(editName)}`, { replace: true });
+            }
+        }
+        setIsEditing(false);
+    };
+
     if (!exerciseName) return <div style={{ padding: '1rem' }}>No exercise selected</div>;
 
     return (
@@ -94,12 +108,29 @@ export default function ExerciseAnalytics() {
             <button
                 className="btn"
                 style={{ marginBottom: '1rem', padding: '0.5rem' }}
-                onClick={() => navigate(-1)}
+                onClick={() => navigate('/history')}
             >
                 <ArrowLeft size={16} /> Back
             </button>
 
-            <h1 style={{ marginBottom: 'var(--space-lg)' }}>{exerciseName}</h1>
+            {isEditing ? (
+                <form onSubmit={handleRename} style={{ marginBottom: 'var(--space-lg)' }}>
+                    <input
+                        className="input"
+                        autoFocus
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        onBlur={() => setIsEditing(false)}
+                    />
+                </form>
+            ) : (
+                <h1
+                    style={{ marginBottom: 'var(--space-lg)', cursor: 'text', borderBottom: '1px dashed #333', display: 'inline-block' }}
+                    onClick={() => { setEditName(exerciseName); setIsEditing(true); }}
+                >
+                    {exerciseName} <span style={{ fontSize: '0.4em', color: 'var(--text-muted)', verticalAlign: 'middle' }}>(Edit)</span>
+                </h1>
+            )}
 
             <div className="card" style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {chartData ? (
