@@ -38,7 +38,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                 <Search size={20} style={{ position: 'absolute', left: 10, top: 12, color: 'var(--text-muted)' }} />
                 <input
                     className="input"
-                    style={{ paddingLeft: '2.5rem' }}
+                    style={{ paddingLeft: '2.5rem', color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none' }}
                     placeholder="Search..."
                     autoFocus
                     value={searchTerm}
@@ -51,7 +51,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                     <button
                         key={name}
                         className="card"
-                        style={{ textAlign: 'left', padding: '1rem', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)' }}
+                        style={{ textAlign: 'left', padding: '1rem', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
                         onClick={() => onSelect(name)}
                     >
                         {name}

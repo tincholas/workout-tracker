@@ -114,6 +114,7 @@ export default function Calendar() {
             </div>
 
             <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Sets</h3>
                 <VolumeChart history={history} currentMonth={month} currentYear={year} />
             </div>
 
