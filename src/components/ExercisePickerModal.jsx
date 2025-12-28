@@ -10,12 +10,16 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
     const allExercises = useMemo(() => {
         const exercises = new Set();
         // Templates
-        Object.values(WORKOUT_TEMPLATES).flat().forEach(ex => exercises.add(ex.name));
+        Object.values(WORKOUT_TEMPLATES).flat().forEach(ex => {
+            if (ex && ex.name) exercises.add(ex.name);
+        });
         // History
         if (history) {
-            history.forEach(w => w.exercises.forEach(ex => exercises.add(ex.name)));
+            history.forEach(w => w.exercises.forEach(ex => {
+                if (ex && ex.name) exercises.add(ex.name);
+            }));
         }
-        return Array.from(exercises).sort();
+        return Array.from(exercises).filter(Boolean).sort();
     }, [history]);
 
     const filtered = allExercises.filter(e => e.toLowerCase().includes(searchTerm.toLowerCase()));
