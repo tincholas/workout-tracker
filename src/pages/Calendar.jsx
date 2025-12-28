@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useWorkout } from '../store/WorkoutContext';
 import { SPLIT_COLORS } from '../store/models';
+import VolumeChart from '../components/VolumeChart';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -68,7 +69,9 @@ export default function Calendar() {
                         padding: '0.25rem',
                         cursor: workouts.length > 0 ? 'pointer' : 'default',
                         background: workouts.length > 0 ? 'rgba(255,255,255,0.08)' : 'transparent',
-                        border: 'none'
+                        border: 'none',
+                        position: 'relative',
+                        overflow: 'hidden'
                     }}
                     onClick={() => handleDayClick(day)}
                 >
@@ -108,6 +111,10 @@ export default function Calendar() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
                 {renderCalendar()}
+            </div>
+
+            <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
+                <VolumeChart history={history} currentMonth={month} currentYear={year} />
             </div>
 
             {/* Details Modal */}
