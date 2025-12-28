@@ -36,9 +36,9 @@ export default function WorkoutSession() {
 
     const handleSelectExercise = (name) => {
         if (pickerMode === 'ADD') {
-            addExercise(name, 'Custom');
+            addExercise(name);
         } else if (pickerMode === 'SWAP' && swapTargetId) {
-            swapExercise(swapTargetId, name, 'Custom');
+            swapExercise(swapTargetId, name);
         }
         setPickerMode(null);
         setSwapTargetId(null);
