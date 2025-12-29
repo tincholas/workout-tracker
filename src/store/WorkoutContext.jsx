@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise } from './models';
+import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE } from './models';
 
 const WorkoutContext = createContext();
 
@@ -57,34 +57,32 @@ export const WorkoutProvider = ({ children }) => {
         let workout = createWorkout(name, type);
 
         // Pre-fill exercises based on type
-        if (customName) {
-            // Custom workout starts empty
-            workout.exercises = [];
-        } else if (WORKOUT_TEMPLATES[type]) {
-            // Standard templates
+        // Pre-fill exercises logic
+
+        // 1. Try to find the last completed session of this specific workout name
+        // This works for both Standard (name matches type) and Custom (unique names)
+        const lastSession = history
+            .filter(w => w.name === name && w.endTime)
+            .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))[0];
+
+        if (lastSession) {
+            // Copy exercises from history
+            workout.exercises = lastSession.exercises.map(ex => ({
+                ...createExercise(ex.name, ex.target),
+                sets: ex.sets.map(s => ({
+                    ...s,
+                    id: uuidv4(),
+                    completed: false,
+                    // Preserve weight/reps from history
+                }))
+            }));
+        } else if (WORKOUT_TEMPLATES[type] && !customName) {
+            // 2. Fallback to Standard Template if no history and not custom
             const template = WORKOUT_TEMPLATES[type];
-
-            // Smart Population Logic
-            // Find the last completed workout of this same type
-            const lastSession = history
-                .filter(w => w.type === type && w.endTime)
-                .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))[0];
-
-            if (lastSession) {
-                // If found, copy its exercises structure (exercises, sets, reps, weights)
-                // but reset completion status and generate new IDs
-                workout.exercises = lastSession.exercises.map(ex => ({
-                    ...createExercise(ex.name, ex.target),
-                    sets: ex.sets.map(s => ({
-                        ...s,
-                        id: uuidv4(),
-                        completed: false
-                    }))
-                }));
-            } else {
-                // Fallback to default template if no history
-                workout.exercises = template.map(t => createExercise(t.name, t.target));
-            }
+            workout.exercises = template.map(t => createExercise(t.name, t.target));
+        } else {
+            // 3. New Custom Workout (first time) starts empty
+            workout.exercises = [];
         }
 
         setActiveWorkout(workout);
