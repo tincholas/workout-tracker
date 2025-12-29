@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Check } from 'lucide-react';
 
 export default function SetRow({ set, index, onUpdate, onDelete }) {
+    // Ref to store the weight value before clearing it on focus
+    const prevWeightRef = useRef(set.weight);
+
     const handleChange = (field, value) => {
         onUpdate({ [field]: value });
+    };
+
+    const handleWeightFocus = () => {
+        prevWeightRef.current = set.weight;
+        handleChange('weight', '');
+    };
+
+    const handleWeightBlur = () => {
+        // If left empty, restore the previous value
+        // We compare against empty string because that's what we cleared it to
+        if (set.weight === '' || set.weight === null) {
+            handleChange('weight', prevWeightRef.current);
+        }
     };
 
     return (
@@ -37,6 +53,8 @@ export default function SetRow({ set, index, onUpdate, onDelete }) {
                     placeholder="kg"
                     value={set.weight}
                     onChange={(e) => handleChange('weight', e.target.value)}
+                    onFocus={handleWeightFocus}
+                    onBlur={handleWeightBlur}
                 />
                 <span style={{ position: 'absolute', right: 8, top: 10, fontSize: '0.7em', color: 'var(--text-muted)' }}>KG</span>
             </div>
