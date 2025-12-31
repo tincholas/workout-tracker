@@ -1,43 +1,76 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE } from './models';
+import { initDB, getData, setData } from './db';
 
 const WorkoutContext = createContext();
 
-const STORAGE_KEYS = {
-    HISTORY: 'workout_history',
-    ACTIVE_WORKOUT: 'workout_active',
-};
-
 export const WorkoutProvider = ({ children }) => {
+    // ... rest of the file ...
     // State
     const [history, setHistory] = useState([]);
     const [activeWorkout, setActiveWorkout] = useState(null);
     const [extraTypes, setExtraTypes] = useState([]);
+    const [preferredUnit, setPreferredUnit] = useState('KG'); // 'KG' or 'LBS'
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Load from LocalStorage
+    // Initialize DB and Load Data
     useEffect(() => {
-        const savedHistory = localStorage.getItem('workout_history');
-        const savedActive = localStorage.getItem('workout_active');
-        const savedTypes = localStorage.getItem('workout_custom_types');
+        const loadData = async () => {
+            try {
+                // Initialize (and migrate if needed)
+                await initDB();
 
-        if (savedHistory) setHistory(JSON.parse(savedHistory));
-        if (savedActive) setActiveWorkout(JSON.parse(savedActive));
-        if (savedTypes) setExtraTypes(JSON.parse(savedTypes));
+                // Load all data
+                const savedHistory = await getData('workout_history');
+                const savedActive = await getData('workout_active');
+                const savedTypes = await getData('workout_custom_types');
+                const savedUnit = await getData('workout_unit_preference');
 
-        setIsInitialized(true);
+                if (savedHistory) setHistory(savedHistory);
+                if (savedActive) setActiveWorkout(savedActive);
+                if (savedTypes) setExtraTypes(savedTypes);
+                if (savedUnit) setPreferredUnit(savedUnit);
+            } catch (err) {
+                console.error("Failed to load data from DB:", err);
+            } finally {
+                setIsInitialized(true);
+            }
+        };
+
+        loadData();
     }, []);
 
-    // Save to LocalStorage
+    // Save to DB on change
     useEffect(() => {
         if (!isInitialized) return;
-        localStorage.setItem('workout_history', JSON.stringify(history));
-        localStorage.setItem('workout_active', JSON.stringify(activeWorkout));
-        localStorage.setItem('workout_custom_types', JSON.stringify(extraTypes));
-    }, [history, activeWorkout, extraTypes, isInitialized]);
+
+        // Use a debounced or direct save. Given user frequency, direct save is fine,
+        // but idb is async. We don't await here (fire and forget).
+        setData('workout_history', history);
+        setData('workout_active', activeWorkout);
+        setData('workout_custom_types', extraTypes);
+        setData('workout_unit_preference', preferredUnit);
+    }, [history, activeWorkout, extraTypes, preferredUnit, isInitialized]);
+
+    if (!isInitialized) {
+        // Return a loading state or null
+        // Since we want to key-off 'isInitialized' to avoid flashing empty data
+        return <div style={{
+            height: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#0a0a0a',
+            color: '#333'
+        }}>Loading...</div>;
+    }
 
     // Actions
+    const toggleUnit = () => {
+        setPreferredUnit(prev => prev === 'KG' ? 'LBS' : 'KG');
+    };
+
     const createCustomType = (name, color) => {
         const newType = {
             id: crypto.randomUUID(),
@@ -160,13 +193,17 @@ export const WorkoutProvider = ({ children }) => {
     };
 
     // Global Rename function
-    const renameExercise = (oldName, newName) => {
+    const renameExercise = (oldName, newName, newTarget = null) => {
         // 1. Update History
         const updatedHistory = history.map(workout => ({
             ...workout,
             exercises: workout.exercises.map(ex => {
                 if (ex.name === oldName) {
-                    return { ...ex, name: newName };
+                    return {
+                        ...ex,
+                        name: newName,
+                        target: newTarget || ex.target // Update target if provided, else keep old
+                    };
                 }
                 return ex;
             })
@@ -179,7 +216,11 @@ export const WorkoutProvider = ({ children }) => {
                 ...activeWorkout,
                 exercises: activeWorkout.exercises.map(ex => {
                     if (ex.name === oldName) {
-                        return { ...ex, name: newName };
+                        return {
+                            ...ex,
+                            name: newName,
+                            target: newTarget || ex.target
+                        };
                     }
                     return ex;
                 })
@@ -275,6 +316,8 @@ export const WorkoutProvider = ({ children }) => {
             removeExercise,
             swapExercise,
             renameExercise,
+            toggleUnit,
+            preferredUnit,
             extraTypes,
             createCustomType,
             deleteCustomType

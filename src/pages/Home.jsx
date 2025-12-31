@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { EXERCISE_TYPES, SPLIT_COLORS } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
-import { Dumbbell, Anchor, Move, Footprints, Shirt, BicepsFlexed, User, Plus, Star, X, Trash2 } from 'lucide-react';
+import { Dumbbell, Anchor, Move, Footprints, Shirt, BicepsFlexed, User, Plus, Star, X, Trash2, Settings } from 'lucide-react';
+import SettingsModal from '../components/SettingsModal';
 
 const SPLIT_ICONS = {
     [EXERCISE_TYPES.CHEST_TRICEPS]: Shirt,
@@ -17,6 +18,7 @@ export default function Home() {
     const { startWorkout, activeWorkout, extraTypes, createCustomType, deleteCustomType } = useWorkoutContext();
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const [newWorkoutName, setNewWorkoutName] = useState('');
     const [selectedColor, setSelectedColor] = useState(COLORS[4]);
 
@@ -35,7 +37,22 @@ export default function Home() {
 
     return (
         <div className="page-container" style={{ padding: 'var(--space-lg)' }}>
-            <header style={{ marginBottom: '2rem', textAlign: 'center', color: '#ffffff' }}>
+            <header style={{ marginBottom: '2rem', textAlign: 'center', color: '#ffffff', position: 'relative' }}>
+                <button
+                    onClick={() => setShowSettings(true)}
+                    style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: 0,
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '0.5rem'
+                    }}
+                >
+                    <Settings size={24} />
+                </button>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1px', marginBottom: '0.5rem', color: '#ffffff' }}>
                     IRON <span style={{ color: 'var(--primary)' }}>TRACK</span>
                 </h1>
@@ -206,6 +223,8 @@ export default function Home() {
                     </div>
                 </div>
             )}
+            {/* Settings Modal */}
+            {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
         </div>
     );
 }

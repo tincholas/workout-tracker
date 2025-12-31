@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
+import { MUSCLE_GROUPS } from '../store/models';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -32,6 +33,23 @@ export default function ExerciseAnalytics() {
     const [isEditing, setIsEditing] = React.useState(false);
     const [editName, setEditName] = React.useState(exerciseName || '');
 
+    // Find current target from history
+    const currentTarget = React.useMemo(() => {
+        if (!history || !exerciseName) return '';
+        for (const w of history) {
+            const ex = w.exercises.find(e => e.name === exerciseName);
+            if (ex && ex.target) return ex.target;
+        }
+        return '';
+    }, [history, exerciseName]);
+
+    const [editTarget, setEditTarget] = React.useState(currentTarget);
+
+    // Update editTarget when currentTarget is found (initial load)
+    React.useEffect(() => {
+        setEditTarget(currentTarget);
+    }, [currentTarget]);
+
     const chartData = useMemo(() => {
         if (!history || !exerciseName) return null;
 
@@ -42,36 +60,6 @@ export default function ExerciseAnalytics() {
         if (relevantWorkouts.length === 0) return null;
 
         // 2. Aggregate Max Weight by Date
-        const maxWeightByDate = {};
-
-        relevantWorkouts.forEach(w => {
-            const dateStr = new Date(w.startTime).toLocaleDateString();
-            const ex = w.exercises.find(e => e.name === exerciseName);
-
-            if (ex) {
-                // Find max weight in this session (ignore incomplete sets if you prefer, but usually all sets count for strength history)
-                const sessionMax = Math.max(...ex.sets.map(s => Number(s.weight) || 0));
-
-                if (!maxWeightByDate[dateStr] || sessionMax > maxWeightByDate[dateStr]) {
-                    maxWeightByDate[dateStr] = sessionMax;
-                }
-            }
-        });
-
-        // 3. Sort Dates
-        const sortedDates = Object.keys(maxWeightByDate).sort((a, b) => {
-            // parse localized date string back to timestamp for sorting is tricky depending on locale
-            // Better to use ISO string keys for sorting, but for display we want locale.
-            // Let's rely on the fact that relevantWorkouts usually comes chronologically or we can sort by timestamps first.
-            // Actually, let's just sort the unique dates we found.
-            // A simple way is to convert the date string back to a Date object.
-            const dateA = new Date(a.split('/').reverse().join('-')); // Hacky for DD/MM/YYYY. 
-            // Better approach: Store timestamp in keys or just sort the filtered workouts first (which we did).
-            return new Date(a) - new Date(b);
-        });
-
-        // Re-sorting implementation to be safer:
-        // Use a Map or Object where keys are YYYY-MM-DD for sorting, and then format for display.
         const dateMap = new Map();
         relevantWorkouts.forEach(w => {
             // Use YYYY-MM-DD for consistent sorting keys
@@ -131,11 +119,16 @@ export default function ExerciseAnalytics() {
 
     const handleRename = (e) => {
         e.preventDefault();
-        if (editName && editName !== exerciseName) {
-            if (confirm(`Rename "${exerciseName}" to "${editName}" globally?`)) {
-                renameExercise(exerciseName, editName);
-                // Update URL without reload to reflect new name
-                navigate(`/analytics?exercise=${encodeURIComponent(editName)}`, { replace: true });
+        const changedName = editName && editName !== exerciseName;
+        const changedTarget = editTarget && editTarget !== currentTarget;
+
+        if (changedName || changedTarget) {
+            if (confirm(`Update "${exerciseName}"? \nName: ${editName}\nTarget: ${editTarget || 'Unchanged'}`)) {
+                renameExercise(exerciseName, editName, editTarget);
+                // Update URL without reload to reflect new name if changed
+                if (changedName) {
+                    navigate(`/analytics?exercise=${encodeURIComponent(editName)}`, { replace: true });
+                }
             }
         }
         setIsEditing(false);
@@ -154,14 +147,32 @@ export default function ExerciseAnalytics() {
             </button>
 
             {isEditing ? (
-                <form onSubmit={handleRename} style={{ marginBottom: 'var(--space-lg)' }}>
+                <form onSubmit={handleRename} style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '300px' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Name</label>
                     <input
                         className="input"
                         autoFocus
                         value={editName}
                         onChange={e => setEditName(e.target.value)}
-                        onBlur={() => setIsEditing(false)}
                     />
+
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Muscle Group</label>
+                    <select
+                        className="input"
+                        style={{ padding: '0.8rem', backgroundColor: '#1f2937', color: '#fff', border: '1px solid #444' }}
+                        value={editTarget}
+                        onChange={e => setEditTarget(e.target.value)}
+                    >
+                        <option value="" style={{ backgroundColor: '#1f2937' }}>Select (Optional)</option>
+                        {MUSCLE_GROUPS.map(g => (
+                            <option key={g} value={g} style={{ backgroundColor: '#1f2937' }}>{g}</option>
+                        ))}
+                    </select>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button type="submit" className="btn btn-primary">Save</button>
+                        <button type="button" className="btn" onClick={() => setIsEditing(false)}>Cancel</button>
+                    </div>
                 </form>
             ) : (
                 <h1

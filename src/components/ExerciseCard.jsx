@@ -4,7 +4,7 @@ import { useWorkout } from '../store/WorkoutContext';
 import { RefreshCw, Plus, Minus, Trash2 } from 'lucide-react';
 
 export default function ExerciseCard({ exercise, onSwap }) {
-    const { addSet, removeSet, removeExercise, updateSet } = useWorkout();
+    const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit } = useWorkout();
 
     const handleSetUpdate = (setId, updates) => {
         updateSet(exercise.id, setId, updates);
@@ -26,7 +26,12 @@ export default function ExerciseCard({ exercise, onSwap }) {
 
             <div style={{ marginBottom: '0.5rem', display: 'grid', gridTemplateColumns: 'auto 1fr 1fr auto', gap: '0.5rem', paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SET</span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>KG</span>
+                <span
+                    onClick={toggleUnit}
+                    style={{ fontSize: '0.8rem', color: 'var(--primary)', textAlign: 'center', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                    {preferredUnit}
+                </span>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>REPS</span>
                 <span style={{ width: '24px' }}></span>
             </div>

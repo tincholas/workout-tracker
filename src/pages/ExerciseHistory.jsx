@@ -18,14 +18,15 @@ export default function ExerciseHistory() {
             map[target].add(name);
         };
 
-        // Templates
-        Object.values(WORKOUT_TEMPLATES).flat().forEach(ex => add(ex.name, ex.target));
-
-        // History
+        // Only show exercises that have history
         if (history) {
             history.forEach(workout => {
                 if (workout.exercises) {
-                    workout.exercises.forEach(ex => add(ex.name, ex.target || 'Custom'));
+                    workout.exercises.forEach(ex => {
+                        // Only add if there is at least one completed set or some weight recorded
+                        // Actually, user said "had some activity tracked", so appearance in history is sufficient.
+                        add(ex.name, ex.target || 'Custom');
+                    });
                 }
             });
         }

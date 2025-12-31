@@ -4,10 +4,12 @@ import WorkoutSession from './pages/WorkoutSession';
 import ExerciseHistory from './pages/ExerciseHistory';
 import ExerciseAnalytics from './pages/ExerciseAnalytics';
 import Calendar from './pages/Calendar';
-import { Dumbbell, Calendar as CalendarIcon, BarChart } from 'lucide-react';
+import { Dumbbell, Calendar as CalendarIcon, LineChart } from 'lucide-react';
+import { useWorkout } from './store/WorkoutContext';
 
 function App() {
   const location = useLocation();
+  const { activeWorkout } = useWorkout();
 
   return (
     <div className="app-container">
@@ -32,17 +34,39 @@ function App() {
         borderTop: '1px solid rgba(255,255,255,0.1)',
         display: 'flex',
         justifyContent: 'space-around',
-        padding: '1rem',
+        alignItems: 'center',
+        padding: '0.5rem 1rem 1.5rem 1rem', // Reduced padding
+        height: '70px', // Reduced height
         zIndex: 100
       }}>
-        <Link to="/" style={{ color: location.pathname === '/' ? 'var(--color-primary)' : 'var(--text-muted)' }}>
-          <Dumbbell />
+        <Link to="/calendar" style={{
+          color: location.pathname === '/calendar' ? 'var(--color-primary)' : 'var(--text-muted)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center'
+        }}>
+          <CalendarIcon size={26} />
         </Link>
-        <Link to="/calendar" style={{ color: location.pathname === '/calendar' ? 'var(--color-primary)' : 'var(--text-muted)' }}>
-          <CalendarIcon />
+
+        <Link to={activeWorkout ? '/session' : '/'} style={{
+          color: (location.pathname === '/' || location.pathname === '/session') ? '#000' : 'var(--text-muted)',
+          background: 'var(--color-primary)',
+          borderRadius: '50%',
+          width: '52px', // Slightly larger than 26px icons (standard button size)
+          height: '52px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: '-24px', // Reduced float
+          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+          border: '3px solid #111'
+        }}>
+          <Dumbbell size={28} color="#000" strokeWidth={2.5} />
         </Link>
-        <Link to="/history" style={{ color: location.pathname === '/history' ? 'var(--color-primary)' : 'var(--text-muted)' }}>
-          <BarChart />
+
+        <Link to="/history" style={{
+          color: location.pathname === '/history' ? 'var(--color-primary)' : 'var(--text-muted)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center'
+        }}>
+          <LineChart size={26} />
         </Link>
       </nav>
     </div>

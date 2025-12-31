@@ -16,6 +16,18 @@ export const SPLIT_COLORS = {
     [EXERCISE_TYPES.CUSTOM]: '#a3a3a3' // Grey
 };
 
+export const MUSCLE_GROUPS = [
+    'Back',
+    'Biceps',
+    'Chest',
+    'Triceps',
+    'Shoulders',
+    'Legs',
+    'Core',
+    'Cardio',
+    'Other'
+];
+
 export const createSet = (weight = 0, reps = 12) => ({
     id: uuidv4(),
     weight: Number(weight),
