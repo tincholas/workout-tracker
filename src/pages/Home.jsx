@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { EXERCISE_TYPES, SPLIT_COLORS } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
-import { Dumbbell, Anchor, Move, Footprints, Shirt, BicepsFlexed, User, Plus, Star, X, Trash2, Settings } from 'lucide-react';
+import { Dumbbell, Anchor, Move, Footprints, Shirt, BicepsFlexed, User, Plus, Star, X, Trash2, Settings, History } from 'lucide-react';
 import SettingsModal from '../components/SettingsModal';
 
 const SPLIT_ICONS = {
@@ -15,12 +15,20 @@ const SPLIT_ICONS = {
 const COLORS = ['#ef4444', '#3b82f6', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#f97316', '#64748b'];
 
 export default function Home() {
-    const { startWorkout, activeWorkout, extraTypes, createCustomType, deleteCustomType } = useWorkoutContext();
+    const { startWorkout, activeWorkout, extraTypes, createCustomType, deleteCustomType, history } = useWorkoutContext();
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [newWorkoutName, setNewWorkoutName] = useState('');
     const [selectedColor, setSelectedColor] = useState(COLORS[4]);
+
+    // Find last workout name
+    const lastWorkoutName = React.useMemo(() => {
+        if (!history || history.length === 0) return null;
+        // Sort by endTime descending
+        const sorted = [...history].sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
+        return sorted[0].name;
+    }, [history]);
 
     const handleStart = (type, customName = null) => {
         startWorkout(type, customName);
@@ -72,6 +80,7 @@ export default function Home() {
                 {/* Standard Splits */}
                 {Object.values(EXERCISE_TYPES).filter(t => t !== 'Custom').map((type) => {
                     const Icon = SPLIT_ICONS[type] || Dumbbell;
+                    const isLast = lastWorkoutName === type;
                     return (
                         <button
                             key={type}
@@ -89,7 +98,8 @@ export default function Home() {
                                 textAlign: 'left',
                                 cursor: 'pointer',
                                 transition: 'transform 0.2s',
-                                color: '#ffffff' // Ensure white text
+                                color: '#ffffff', // Ensure white text
+                                position: 'relative'
                             }}
                         >
                             <div style={{
@@ -100,59 +110,83 @@ export default function Home() {
                             }}>
                                 <Icon size={28} />
                             </div>
-                            {type}
+                            <div style={{ flex: 1 }}>{type}</div>
+                            {isLast && (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                    color: 'var(--text-muted)', fontSize: '0.75rem',
+                                    background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '12px'
+                                }}>
+                                    <History size={12} />
+                                    <span>Last</span>
+                                </div>
+                            )}
                         </button>
                     );
                 })}
 
                 {/* Custom Workouts */}
-                {extraTypes.map((custom) => (
-                    <div key={custom.id} style={{ position: 'relative' }}>
-                        <button
-                            className="card"
-                            onClick={() => handleStart(EXERCISE_TYPES.CUSTOM, custom.name)}
-                            style={{
-                                padding: '1.5rem',
-                                borderLeft: `6px solid ${custom.color}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1rem',
-                                fontSize: '1.2rem',
-                                fontWeight: 'bold',
-                                width: '100%',
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                                color: '#ffffff' // Ensure white text
-                            }}
-                        >
-                            <div style={{
-                                background: `${custom.color}20`,
-                                padding: '0.75rem',
-                                borderRadius: '12px',
-                                color: custom.color
-                            }}>
-                                <Star size={28} />
-                            </div>
-                            {custom.name}
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); deleteCustomType(custom.id); }}
-                            style={{
-                                position: 'absolute',
-                                right: '1rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#ef4444',
-                                cursor: 'pointer',
-                                padding: '0.5rem'
-                            }}
-                        >
-                            <Trash2 size={20} />
-                        </button>
-                    </div>
-                ))}
+                {extraTypes.map((custom) => {
+                    const isLast = lastWorkoutName === custom.name;
+                    return (
+                        <div key={custom.id} style={{ position: 'relative' }}>
+                            <button
+                                className="card"
+                                onClick={() => handleStart(EXERCISE_TYPES.CUSTOM, custom.name)}
+                                style={{
+                                    padding: '1.5rem',
+                                    borderLeft: `6px solid ${custom.color}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    fontSize: '1.2rem',
+                                    fontWeight: 'bold',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    color: '#ffffff' // Ensure white text
+                                }}
+                            >
+                                <div style={{
+                                    background: `${custom.color}20`,
+                                    padding: '0.75rem',
+                                    borderRadius: '12px',
+                                    color: custom.color
+                                }}>
+                                    <Star size={28} />
+                                </div>
+                                <div style={{ flex: 1 }}>{custom.name}</div>
+                                {isLast && (
+                                    <div style={{
+                                        display: 'flex', alignItems: 'center', gap: '4px',
+                                        color: 'var(--text-muted)', fontSize: '0.75rem',
+                                        background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '12px',
+                                        marginRight: '2.5rem' // Avoid delete button
+                                    }}>
+                                        <History size={12} />
+                                        <span>Last</span>
+                                    </div>
+                                )}
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); deleteCustomType(custom.id); }}
+                                style={{
+                                    position: 'absolute',
+                                    right: '1rem',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#ef4444',
+                                    cursor: 'pointer',
+                                    padding: '0.5rem'
+                                }}
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
+                    );
+                })}
 
                 {/* Create New Button */}
                 <button
