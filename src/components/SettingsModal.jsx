@@ -86,12 +86,12 @@ export default function SettingsModal({ onClose }) {
                     <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', margin: 0 }}>Data</h3>
 
                     <button onClick={handleExport} className="btn btn-secondary" style={{ justifyContent: 'flex-start', gap: '1rem', padding: '1rem' }}>
-                        <Download size={20} />
+                        <Upload size={20} />
                         <span>Export Data</span>
                     </button>
 
                     <button onClick={handleImportClick} className="btn btn-secondary" style={{ justifyContent: 'flex-start', gap: '1rem', padding: '1rem' }}>
-                        <Upload size={20} />
+                        <Download size={20} />
                         <span>Import Data</span>
                     </button>
                     <input

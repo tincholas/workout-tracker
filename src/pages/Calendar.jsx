@@ -3,7 +3,7 @@ import { useWorkout } from '../store/WorkoutContext';
 import { SPLIT_COLORS } from '../store/models';
 import VolumeChart from '../components/VolumeChart';
 import CardioChart from '../components/CardioChart';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Share2 } from 'lucide-react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -35,7 +35,10 @@ export default function Calendar() {
         return map;
     }, [history]);
 
+    const [animationClass, setAnimationClass] = useState('');
+
     const changeMonth = (delta) => {
+        setAnimationClass(delta > 0 ? 'slide-right' : 'slide-left');
         setCurrentDate(new Date(year, month + delta, 1));
     };
 
@@ -43,6 +46,50 @@ export default function Calendar() {
         const key = `${year}-${month}-${day}`;
         if (workoutsByDate[key]) {
             setSelectedDay({ dateStr: key, workouts: workoutsByDate[key] });
+        }
+    };
+
+    const handleShare = async (workout) => {
+        const date = new Date(workout.endTime).toLocaleDateString();
+        let text = `🏋️ ${workout.name} (${date})\n\n`;
+
+        workout.exercises.forEach(ex => {
+            text += `🔹 ${ex.name}`;
+
+            if (ex.target === 'Cardio') {
+                const mins = ((ex.accumulatedSeconds || 0) / 60).toFixed(1);
+                text += `: ${mins} mins\n`;
+            } else {
+                text += `\n`;
+                const completedSets = ex.sets.filter(s => s.completed);
+                if (completedSets.length > 0) {
+                    completedSets.forEach((s, i) => {
+                        text += `   • ${s.weight}kg x ${s.reps}\n`;
+                    });
+                } else {
+                    text += `   (No completed sets)\n`;
+                }
+            }
+            text += `\n`;
+        });
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `${workout.name} Workout`,
+                    text: text,
+                });
+            } catch (err) {
+                console.log('Error sharing:', err);
+            }
+        } else {
+            // Fallback
+            try {
+                await navigator.clipboard.writeText(text);
+                alert('Workout summary copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy', err);
+            }
         }
     };
 
@@ -96,8 +143,67 @@ export default function Calendar() {
         return days;
     };
 
+    // Touch Handling for Swipe
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) {
+            changeMonth(1);
+        }
+        if (isRightSwipe) {
+            changeMonth(-1);
+        }
+    };
+
+    // Check for activity in current month to show/hide charts
+    const { hasSetsData, hasCardioData } = useMemo(() => {
+        if (!history) return { hasSetsData: false, hasCardioData: false };
+
+        const monthlyWorkouts = history.filter(w => {
+            const d = new Date(w.endTime);
+            return d.getMonth() === month && d.getFullYear() === year;
+        });
+
+        let hasSets = false;
+        let hasCardio = false;
+
+        monthlyWorkouts.forEach(w => {
+            w.exercises.forEach(ex => {
+                if (ex.target === 'Cardio') {
+                    if ((ex.accumulatedSeconds || 0) > 0) hasCardio = true;
+                } else {
+                    if (ex.sets.some(s => s.completed)) hasSets = true;
+                }
+            });
+        });
+
+        return { hasSetsData: hasSets, hasCardioData: hasCardio };
+    }, [history, month, year]);
+
     return (
-        <div style={{ padding: 'var(--space-md)' }}>
+        <div
+            style={{ padding: 'var(--space-md)' }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
                 <h2 style={{ margin: 0 }}>{MONTHS[month]} {year}</h2>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -110,19 +216,27 @@ export default function Calendar() {
                 {DAYS.map(d => <span key={d} style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{d}</span>)}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
+            <div
+                key={currentDate.toISOString()}
+                className={animationClass}
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}
+            >
                 {renderCalendar()}
             </div>
 
-            <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Sets</h3>
-                <VolumeChart history={history} currentMonth={month} currentYear={year} />
-            </div>
+            {hasSetsData && (
+                <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Sets</h3>
+                    <VolumeChart history={history} currentMonth={month} currentYear={year} />
+                </div>
+            )}
 
-            <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Cardio (Minutes)</h3>
-                <CardioChart history={history} currentMonth={month} currentYear={year} />
-            </div>
+            {hasCardioData && (
+                <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Cardio (Minutes)</h3>
+                    <CardioChart history={history} currentMonth={month} currentYear={year} />
+                </div>
+            )}
 
             {/* Details Modal */}
             {selectedDay && (
@@ -138,7 +252,12 @@ export default function Calendar() {
 
                     {selectedDay.workouts.map(w => (
                         <div key={w.id} style={{ marginBottom: '2rem' }}>
-                            <h3 style={{ borderLeft: `4px solid ${SPLIT_COLORS[w.type]}`, paddingLeft: '1rem' }}>{w.name}</h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderLeft: `4px solid ${SPLIT_COLORS[w.type]}`, paddingLeft: '1rem' }}>
+                                <h3 style={{ margin: 0 }}>{w.name}</h3>
+                                <button className="btn" onClick={() => handleShare(w)} style={{ padding: '0.5rem', color: 'var(--primary)' }}>
+                                    <Share2 size={20} />
+                                </button>
+                            </div>
                             <div style={{ display: 'grid', gap: '1rem' }}>
                                 {w.exercises.map(ex => (
                                     <div key={ex.id} className="card" style={{ padding: '1rem' }}>
@@ -173,7 +292,8 @@ export default function Calendar() {
                                 ))}
                             </div>
                         </div>
-                    ))}
+                    ))
+                    }
                 </div>
             )}
         </div>

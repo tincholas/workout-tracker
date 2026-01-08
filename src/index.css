@@ -3,13 +3,16 @@
   --bg-app: #0a0a0a;
   --bg-card: #161616;
   --bg-input: #202020;
-  
+
   /* Accents */
-  --color-primary: #3b82f6; /* Electric Blue */
+  --color-primary: #3b82f6;
+  /* Electric Blue */
   --color-primary-glow: rgba(59, 130, 246, 0.5);
-  --color-success: #10b981; /* Neon Green */
-  --color-danger: #ef4444;  /* Red */
-  
+  --color-success: #10b981;
+  /* Neon Green */
+  --color-danger: #ef4444;
+  /* Red */
+
   /* Text */
   --text-primary: #ffffff;
   --text-secondary: #a3a3a3;
@@ -41,7 +44,7 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   /* Prevent pull-to-refresh on mobile */
-  overscroll-behavior-y: none; 
+  overscroll-behavior-y: none;
 }
 
 #root {
@@ -53,7 +56,7 @@ body {
 /* Utilities */
 .btn {
   background: var(--bg-card);
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-md);
@@ -96,7 +99,7 @@ body {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   padding: var(--space-md);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Mobile optimizations */
@@ -104,4 +107,36 @@ body {
   :root {
     --space-md: 0.875rem;
   }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.slide-right {
+  animation: slideInRight 0.3s var(--ease-spring);
+}
+
+.slide-left {
+  animation: slideInLeft 0.3s var(--ease-spring);
 }
