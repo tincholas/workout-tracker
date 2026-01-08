@@ -102,6 +102,7 @@ export const WorkoutProvider = ({ children }) => {
             // Copy exercises from history
             workout.exercises = lastSession.exercises.map(ex => ({
                 ...createExercise(ex.name, ex.target),
+                targetTimeMinutes: ex.targetTimeMinutes || 0, // Preserve previous target time
                 sets: ex.sets.map(s => ({
                     ...s,
                     id: uuidv4(),
@@ -123,7 +124,31 @@ export const WorkoutProvider = ({ children }) => {
 
     const completeWorkout = () => {
         if (!activeWorkout) return;
-        const completed = { ...activeWorkout, endTime: new Date().toISOString() };
+
+        const endTime = new Date();
+
+        // Finalize any running timers
+        const finalizedExercises = activeWorkout.exercises.map(ex => {
+            if (ex.target === 'Cardio' && ex.timerState === 'running' && ex.timerStart) {
+                const start = new Date(ex.timerStart).getTime();
+                const now = endTime.getTime();
+                const elapsed = (now - start) / 1000;
+                return {
+                    ...ex,
+                    timerState: 'finished', // or paused/idle
+                    timerStart: null,
+                    accumulatedSeconds: (ex.accumulatedSeconds || 0) + elapsed
+                };
+            }
+            return ex;
+        });
+
+        const completed = {
+            ...activeWorkout,
+            exercises: finalizedExercises,
+            endTime: endTime.toISOString()
+        };
+
         setHistory([...history, completed]);
         setActiveWorkout(null);
     };
@@ -177,14 +202,21 @@ export const WorkoutProvider = ({ children }) => {
         setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
     };
 
-    const swapExercise = (oldExerciseId, newExerciseName) => {
+    const swapExercise = (oldExerciseId, exerciseOrName) => {
         if (!activeWorkout) return;
 
-        const target = findTarget(newExerciseName);
+        let name, target;
+        if (typeof exerciseOrName === 'string') {
+            name = exerciseOrName;
+            target = findTarget(name);
+        } else {
+            name = exerciseOrName.name;
+            target = exerciseOrName.target || findTarget(name);
+        }
 
         const updatedExercises = activeWorkout.exercises.map(ex => {
             if (ex.id === oldExerciseId) {
-                return createExercise(newExerciseName, target);
+                return createExercise(name, target);
             }
             return ex;
         });
@@ -302,6 +334,17 @@ export const WorkoutProvider = ({ children }) => {
         setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
     };
 
+    const updateExercise = (exerciseId, updates) => {
+        if (!activeWorkout) return;
+        const updatedExercises = activeWorkout.exercises.map(ex => {
+            if (ex.id === exerciseId) {
+                return { ...ex, ...updates };
+            }
+            return ex;
+        });
+        setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
+    };
+
     return (
         <WorkoutContext.Provider value={{
             activeWorkout,
@@ -320,7 +363,8 @@ export const WorkoutProvider = ({ children }) => {
             preferredUnit,
             extraTypes,
             createCustomType,
-            deleteCustomType
+            deleteCustomType,
+            updateExercise
         }}>
             {children}
         </WorkoutContext.Provider>

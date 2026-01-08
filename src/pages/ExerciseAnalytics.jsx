@@ -59,7 +59,7 @@ export default function ExerciseAnalytics() {
 
         if (relevantWorkouts.length === 0) return null;
 
-        // 2. Aggregate Max Weight by Date
+        // 2. Aggregate Max Weight OR Duration by Date
         const dateMap = new Map();
         relevantWorkouts.forEach(w => {
             // Use YYYY-MM-DD for consistent sorting keys
@@ -67,10 +67,38 @@ export default function ExerciseAnalytics() {
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
             const ex = w.exercises.find(e => e.name === exerciseName);
-            const sessionMax = ex ? Math.max(...ex.sets.map(s => Number(s.weight) || 0)) : 0;
 
-            if (!dateMap.has(key) || sessionMax > dateMap.get(key)) {
-                dateMap.set(key, sessionMax);
+            let val = 0;
+            if (ex) {
+                if (ex.target === 'Cardio') {
+                    // Calculate Total Minutes
+                    // stored as accumulatedSeconds
+                    const seconds = ex.accumulatedSeconds || 0;
+                    val = Number((seconds / 60).toFixed(2)); // Minutes
+                } else {
+                    // Max Weight
+                    val = Math.max(...ex.sets.map(s => Number(s.weight) || 0));
+                }
+            }
+
+            if (!dateMap.has(key) || val > dateMap.get(key)) {
+                // For cardio on same day, maybe sum? 
+                // "evolution of how many minutes you have done per workout"
+                // Usually analytics show per workout. If multiple workouts on same day, maybe max or sum.
+                // Weight is max. Cardio volume usually sum?
+                // But let's stick to "Session Best" logic or "Session Total"?
+                // If I run twice, I probably want to know my total mileage?
+                // Let's keep it max for now to be consistent with weight logic, OR overwrite if later.
+                // Actually, if I run 10 mins then 20 mins, max is 20.
+                // If I do 100kg then 110kg, max is 110.
+                // Let's use MAX for now for consistency, but maybe SUM is better for cardio volume.
+                // User said: "evolution of how many minutes you have done per workout" -> Implies per session.
+
+                // If I have multiple cardio sessions in one day, I'll take the longest one??
+                // Or maybe I should sum them if they are in the *same* workout? (Already handled by array find).
+                // If different workouts on same day:
+                // Let's use val > current ? val : current (MAX behavior)
+                dateMap.set(key, val);
             }
         });
 
@@ -83,20 +111,22 @@ export default function ExerciseAnalytics() {
 
         const dataPoints = sortedKeys.map(k => dateMap.get(k));
 
+        const isCardio = currentTarget === 'Cardio';
+
         return {
             labels,
             datasets: [
                 {
-                    label: 'Max Weight (kg)',
+                    label: isCardio ? 'Duration (Minutes)' : 'Max Weight (kg)',
                     data: dataPoints,
-                    borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                    borderColor: isCardio ? '#22c55e' : '#ef4444',
+                    backgroundColor: isCardio ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
                     tension: 0.3,
                     pointRadius: 4,
                 },
             ],
         };
-    }, [history, exerciseName]);
+    }, [history, exerciseName, currentTarget]);
 
     const options = {
         responsive: true,

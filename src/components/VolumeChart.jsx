@@ -44,6 +44,7 @@ export default function VolumeChart({ history, currentMonth, currentYear }) {
 
             w.exercises.forEach(ex => {
                 const target = ex.target || 'Other';
+                if (target === 'Cardio') return; // Exclude Cardio from sets chart
 
                 if (!targetDataMap[target]) {
                     targetDataMap[target] = new Array(daysInMonth).fill(0);

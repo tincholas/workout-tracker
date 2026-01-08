@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useWorkout } from '../store/WorkoutContext';
 import { SPLIT_COLORS } from '../store/models';
 import VolumeChart from '../components/VolumeChart';
+import CardioChart from '../components/CardioChart';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -118,6 +119,11 @@ export default function Calendar() {
                 <VolumeChart history={history} currentMonth={month} currentYear={year} />
             </div>
 
+            <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Cardio (Minutes)</h3>
+                <CardioChart history={history} currentMonth={month} currentYear={year} />
+            </div>
+
             {/* Details Modal */}
             {selectedDay && (
                 <div style={{
@@ -138,18 +144,30 @@ export default function Calendar() {
                                     <div key={ex.id} className="card" style={{ padding: '1rem' }}>
                                         <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{ex.name}</div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                            {ex.sets.map((s, i) => (
-                                                s.completed && (
-                                                    <span key={i} style={{
-                                                        background: 'rgba(255,255,255,0.1)',
-                                                        padding: '0.25rem 0.5rem',
-                                                        borderRadius: '4px',
-                                                        fontSize: '0.8rem'
-                                                    }}>
-                                                        {s.weight}kg x {s.reps}
-                                                    </span>
-                                                )
-                                            ))}
+                                            {ex.target === 'Cardio' ? (
+                                                <span style={{
+                                                    background: 'rgba(34, 197, 94, 0.2)',
+                                                    color: '#22c55e',
+                                                    padding: '0.25rem 0.5rem',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.9rem'
+                                                }}>
+                                                    {((ex.accumulatedSeconds || 0) / 60).toFixed(1)} mins
+                                                </span>
+                                            ) : (
+                                                ex.sets.map((s, i) => (
+                                                    s.completed && (
+                                                        <span key={i} style={{
+                                                            background: 'rgba(255,255,255,0.1)',
+                                                            padding: '0.25rem 0.5rem',
+                                                            borderRadius: '4px',
+                                                            fontSize: '0.8rem'
+                                                        }}>
+                                                            {s.weight}kg x {s.reps}
+                                                        </span>
+                                                    )
+                                                ))
+                                            )}
                                         </div>
                                     </div>
                                 ))}

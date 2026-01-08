@@ -94,7 +94,15 @@ export const EXERCISE_DATABASE = [
     { name: 'Skull Crushers', target: 'Triceps' },
     { name: 'Overhead Tricep Extension', target: 'Triceps' },
     { name: 'Close-Grip Bench Press', target: 'Triceps' },
-    { name: 'Bench Dips', target: 'Triceps' }
+    { name: 'Bench Dips', target: 'Triceps' },
+
+    // Cardio
+    { name: 'Running', target: 'Cardio' },
+    { name: 'Cycling', target: 'Cardio' },
+    { name: 'Rowing', target: 'Cardio' },
+    { name: 'Elliptical', target: 'Cardio' },
+    { name: 'Stair Climber', target: 'Cardio' },
+    { name: 'Jump Rope', target: 'Cardio' }
 ];
 
 export const WORKOUT_TEMPLATES = {
