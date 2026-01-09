@@ -9,7 +9,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function Calendar() {
-    const { history } = useWorkout();
+    const { history, preferredUnit } = useWorkout();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
 
@@ -226,7 +226,7 @@ export default function Calendar() {
 
             {hasSetsData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Sets</h3>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Volume ({preferredUnit})</h3>
                     <VolumeChart history={history} currentMonth={month} currentYear={year} />
                 </div>
             )}

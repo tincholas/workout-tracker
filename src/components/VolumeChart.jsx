@@ -50,9 +50,15 @@ export default function VolumeChart({ history, currentMonth, currentYear }) {
                     targetDataMap[target] = new Array(daysInMonth).fill(0);
                 }
 
-                // Count completed sets
-                const completedSets = ex.sets.filter(s => s.completed).length;
-                targetDataMap[target][dayIndex] += completedSets;
+                // Calculate Volume (Weight * Reps)
+                const volume = ex.sets.reduce((acc, s) => {
+                    if (s.completed) {
+                        return acc + ((Number(s.weight) || 0) * (Number(s.reps) || 0));
+                    }
+                    return acc;
+                }, 0);
+
+                targetDataMap[target][dayIndex] += volume;
             });
         });
 
@@ -64,6 +70,9 @@ export default function VolumeChart({ history, currentMonth, currentYear }) {
             'Biceps': '#60a5fa', // Light Blue
             'Shoulders': '#eab308', // Yellow
             'Legs': '#22c55e', // Green
+            'Core': '#a855f7', // Purple
+            'Other': '#64748b', // Slate
+            'Custom': '#64748b', // Slate
         };
 
         const getColor = (target) => {
@@ -78,7 +87,8 @@ export default function VolumeChart({ history, currentMonth, currentYear }) {
             label: target,
             data: targetDataMap[target],
             backgroundColor: getColor(target),
-            stack: 'Stack 0',
+            borderColor: '#000',
+            borderWidth: 1,
         }));
 
         return {

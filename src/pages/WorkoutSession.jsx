@@ -53,9 +53,7 @@ export default function WorkoutSession() {
                     <button className="btn" style={{ padding: '0.5rem', background: 'rgba(239, 68, 68, 0.2)', color: 'var(--color-danger)', border: 'none' }} onClick={() => { if (confirm('Cancel workout?')) { cancelWorkout(); navigate('/'); } }}>
                         <X size={20} />
                     </button>
-                    <button className="btn btn-primary" style={{ padding: '0.5rem 1rem' }} onClick={handleFinish}>
-                        <Save size={20} style={{ marginRight: '0.5rem' }} /> Finish
-                    </button>
+
                 </div>
             </div>
 
@@ -75,6 +73,15 @@ export default function WorkoutSession() {
                 onClick={() => setPickerMode('ADD')}
             >
                 <Plus size={20} /> Add Exercise
+            </button>
+
+            {/* Finish Button */}
+            <button
+                className="btn btn-primary"
+                style={{ width: '100%', marginTop: '1rem', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                onClick={handleFinish}
+            >
+                <Save size={20} style={{ marginRight: '0.5rem' }} /> Finish Workout
             </button>
 
             {/* Picker Modal */}
