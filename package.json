@@ -1,10 +1,11 @@
 {
   "name": "workout-tracker",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/update-build-info.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

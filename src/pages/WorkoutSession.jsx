@@ -3,15 +3,17 @@ import { useWorkout } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import ExerciseCard from '../components/ExerciseCard';
 import ExercisePickerModal from '../components/ExercisePickerModal';
+import RestTimerModal from '../components/RestTimerModal';
 import { Plus, Save, X } from 'lucide-react';
 
 export default function WorkoutSession() {
-    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise } = useWorkout();
+    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise, restTimer } = useWorkout();
     const navigate = useNavigate();
 
     // Modal State
     const [pickerMode, setPickerMode] = useState(null); // 'ADD' or 'SWAP'
     const [swapTargetId, setSwapTargetId] = useState(null);
+    const [showRestTimer, setShowRestTimer] = useState(false);
 
     if (!activeWorkout) {
         return (
@@ -26,6 +28,12 @@ export default function WorkoutSession() {
         if (confirm('Finish this workout?')) {
             completeWorkout();
             navigate('/');
+        }
+    };
+
+    const handleSetComplete = () => {
+        if (restTimer.enabled && restTimer.seconds > 0) {
+            setShowRestTimer(true);
         }
     };
 
@@ -63,6 +71,7 @@ export default function WorkoutSession() {
                     key={ex.id}
                     exercise={ex}
                     onSwap={(id) => openSwap(id)}
+                    onSetComplete={handleSetComplete}
                 />
             ))}
 
@@ -89,6 +98,13 @@ export default function WorkoutSession() {
                 <ExercisePickerModal
                     onClose={() => setPickerMode(null)}
                     onSelect={handleSelectExercise}
+                />
+            )}
+
+            {showRestTimer && (
+                <RestTimerModal
+                    initialSeconds={restTimer.seconds}
+                    onClose={() => setShowRestTimer(false)}
                 />
             )}
         </div>

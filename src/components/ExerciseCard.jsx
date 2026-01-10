@@ -4,11 +4,14 @@ import CardioTimer from './CardioTimer';
 import { useWorkout } from '../store/WorkoutContext';
 import { RefreshCw, Plus, Minus, Trash2 } from 'lucide-react';
 
-export default function ExerciseCard({ exercise, onSwap }) {
+export default function ExerciseCard({ exercise, onSwap, onSetComplete }) {
     const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit } = useWorkout();
 
     const handleSetUpdate = (setId, updates) => {
         updateSet(exercise.id, setId, updates);
+        if (updates.completed === true && onSetComplete) {
+            onSetComplete();
+        }
     };
 
     return (

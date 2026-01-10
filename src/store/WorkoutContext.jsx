@@ -12,6 +12,7 @@ export const WorkoutProvider = ({ children }) => {
     const [activeWorkout, setActiveWorkout] = useState(null);
     const [extraTypes, setExtraTypes] = useState([]);
     const [preferredUnit, setPreferredUnit] = useState('KG'); // 'KG' or 'LBS'
+    const [restTimer, setRestTimer] = useState({ enabled: false, seconds: 60 });
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Initialize DB and Load Data
@@ -26,11 +27,13 @@ export const WorkoutProvider = ({ children }) => {
                 const savedActive = await getData('workout_active');
                 const savedTypes = await getData('workout_custom_types');
                 const savedUnit = await getData('workout_unit_preference');
+                const savedTimer = await getData('workout_rest_timer');
 
                 if (savedHistory) setHistory(savedHistory);
                 if (savedActive) setActiveWorkout(savedActive);
                 if (savedTypes) setExtraTypes(savedTypes);
                 if (savedUnit) setPreferredUnit(savedUnit);
+                if (savedTimer) setRestTimer(savedTimer);
             } catch (err) {
                 console.error("Failed to load data from DB:", err);
             } finally {
@@ -51,7 +54,8 @@ export const WorkoutProvider = ({ children }) => {
         setData('workout_active', activeWorkout);
         setData('workout_custom_types', extraTypes);
         setData('workout_unit_preference', preferredUnit);
-    }, [history, activeWorkout, extraTypes, preferredUnit, isInitialized]);
+        setData('workout_rest_timer', restTimer);
+    }, [history, activeWorkout, extraTypes, preferredUnit, restTimer, isInitialized]);
 
     if (!isInitialized) {
         // Return a loading state or null
@@ -364,7 +368,10 @@ export const WorkoutProvider = ({ children }) => {
             extraTypes,
             createCustomType,
             deleteCustomType,
-            updateExercise
+            deleteCustomType,
+            updateExercise,
+            restTimer,
+            setRestTimer
         }}>
             {children}
         </WorkoutContext.Provider>
