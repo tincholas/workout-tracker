@@ -13,7 +13,32 @@ export const WorkoutProvider = ({ children }) => {
     const [extraTypes, setExtraTypes] = useState([]);
     const [preferredUnit, setPreferredUnit] = useState('KG'); // 'KG' or 'LBS'
     const [restTimer, setRestTimer] = useState({ enabled: false, seconds: 60 });
+    const [activeRestTimer, setActiveRestTimer] = useState(null); // { exerciseId, endTime, totalDuration }
     const [isInitialized, setIsInitialized] = useState(false);
+
+    // ... imports etc ...
+
+    const startRestTimer = (exerciseId, durationSeconds) => {
+        const now = Date.now();
+        setActiveRestTimer({
+            exerciseId,
+            endTime: now + (durationSeconds * 1000),
+            totalDuration: durationSeconds * 1000
+        });
+    };
+
+    const cancelRestTimer = () => {
+        setActiveRestTimer(null);
+    };
+
+    const extendRestTimer = (seconds) => {
+        if (!activeRestTimer) return;
+        setActiveRestTimer(prev => ({
+            ...prev,
+            endTime: prev.endTime + (seconds * 1000),
+            totalDuration: prev.totalDuration + (seconds * 1000)
+        }));
+    };
 
     // Initialize DB and Load Data
     useEffect(() => {
@@ -371,7 +396,11 @@ export const WorkoutProvider = ({ children }) => {
             deleteCustomType,
             updateExercise,
             restTimer,
-            setRestTimer
+            setRestTimer,
+            activeRestTimer,
+            startRestTimer,
+            cancelRestTimer,
+            extendRestTimer
         }}>
             {children}
         </WorkoutContext.Provider>

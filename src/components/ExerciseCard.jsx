@@ -1,23 +1,37 @@
 import React from 'react';
 import SetRow from './SetRow';
 import CardioTimer from './CardioTimer';
+import RestTimer from './RestTimer';
 import { useWorkout } from '../store/WorkoutContext';
 import { RefreshCw, Plus, Minus, Trash2 } from 'lucide-react';
 
-export default function ExerciseCard({ exercise, onSwap, onSetComplete }) {
-    const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit } = useWorkout();
+export default function ExerciseCard({ exercise, onSwap }) {
+    const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer } = useWorkout();
 
     const handleSetUpdate = (setId, updates) => {
         updateSet(exercise.id, setId, updates);
-        if (updates.completed === true && onSetComplete) {
-            onSetComplete();
+
+        // Trigger Rest Timer if enabled and set is completed
+        if (updates.completed === true && restTimer.enabled && restTimer.seconds > 0) {
+            startRestTimer(exercise.id, restTimer.seconds);
         }
     };
+
+    const isResting = activeRestTimer && activeRestTimer.exerciseId === exercise.id;
 
     return (
         <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{exercise.name}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{exercise.name}</h3>
+                    {isResting && (
+                        <RestTimer
+                            endTime={activeRestTimer.endTime}
+                            totalDuration={activeRestTimer.totalDuration}
+                            onComplete={cancelRestTimer}
+                        />
+                    )}
+                </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button className="btn btn-secondary" onClick={() => onSwap(exercise.id)} style={{ padding: '0.4rem' }}>
                         <RefreshCw size={16} />
