@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useWorkout } from '../store/WorkoutContext';
-import { Check } from 'lucide-react';
+import { Check, Trophy } from 'lucide-react';
 
-export default function SetRow({ set, index, onUpdate, onDelete }) {
+export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
     const { preferredUnit } = useWorkout();
 
     // --- Weight Logic ---
@@ -11,6 +11,25 @@ export default function SetRow({ set, index, onUpdate, onDelete }) {
 
     // Local state for input value to allow typing decimals/empty
     const [tempValue, setTempValue] = React.useState(null);
+
+    // PR Animation State
+    const [showCelebration, setShowCelebration] = useState(false);
+
+    // Trigger animation when isPR becomes true AND text implies newly completed
+    useEffect(() => {
+        if (isPR && set.completed) {
+            // Only animate if it wasn't just rendered as completed (simple check: mounting)
+            // Ideally we'd compare previous props, but for now, we'll trigger on effect
+            setShowCelebration(true);
+            const timer = setTimeout(() => setShowCelebration(false), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [isPR, set.completed]);
+
+    const handleToggleComplete = () => {
+        const newState = !set.completed;
+        handleChange('completed', newState);
+    };
 
     // Helper for display
     const getDisplayWeight = () => {
@@ -95,26 +114,42 @@ export default function SetRow({ set, index, onUpdate, onDelete }) {
             gap: '0.5rem',
             alignItems: 'center',
             marginBottom: '0.5rem',
-            backgroundColor: set.completed ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+            backgroundColor: set.completed ? (isPR ? 'rgba(234, 179, 8, 0.15)' : 'rgba(16, 185, 129, 0.1)') : 'transparent',
             padding: '0.5rem',
-            borderRadius: 'var(--radius-sm)'
+            borderRadius: 'var(--radius-sm)',
+            border: isPR && set.completed ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid transparent',
+            position: 'relative',
+            overflow: 'hidden'
         }}>
-            <span style={{
-                color: 'var(--text-muted)',
-                width: '24px',
-                textAlign: 'center',
-                fontWeight: 'bold'
-            }}>{index + 1}</span>
+            {showCelebration && (
+                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '6px', height: '6px', background: '#ef4444', borderRadius: '50%', animation: 'pop-1 0.8s forwards' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '6px', height: '6px', background: '#3b82f6', borderRadius: '50%', animation: 'pop-2 0.8s forwards' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '6px', height: '6px', background: '#eab308', borderRadius: '50%', animation: 'pop-3 0.8s forwards' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%', animation: 'pop-4 0.8s forwards' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', width: '6px', height: '6px', background: '#a855f7', borderRadius: '50%', animation: 'pop-5 0.8s forwards' }} />
+                </div>
+            )}
 
-            <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <span style={{
+                    color: 'var(--text-muted)',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold'
+                }}>{index + 1}</span>
+                {isPR && set.completed && <Trophy size={12} color="#eab308" className="pr-celebration" style={{ marginTop: 2 }} />}
+            </div>
+
+            <div style={{ position: 'relative', zIndex: 1 }}>
                 <input
                     type="number"
+                    inputMode="decimal"
                     className="input"
                     style={{
                         padding: '0.5rem',
                         textAlign: 'center',
                         backgroundColor: 'rgba(255,255,255,0.05)',
-                        color: set.completed ? 'var(--color-success)' : 'var(--text-primary)'
+                        color: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'var(--text-primary)'
                     }}
                     placeholder={preferredUnit}
                     value={getDisplayWeight()}
@@ -125,15 +160,16 @@ export default function SetRow({ set, index, onUpdate, onDelete }) {
                 <span style={{ position: 'absolute', right: 8, top: 10, fontSize: '0.7em', color: 'var(--text-muted)' }}>{preferredUnit}</span>
             </div>
 
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', zIndex: 1 }}>
                 <input
                     type="number"
+                    inputMode="decimal"
                     className="input"
                     style={{
                         padding: '0.5rem',
                         textAlign: 'center',
                         backgroundColor: 'rgba(255,255,255,0.05)',
-                        color: set.completed ? 'var(--color-success)' : 'var(--text-primary)'
+                        color: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'var(--text-primary)'
                     }}
                     placeholder="reps"
                     value={getDisplayReps()}
@@ -148,13 +184,14 @@ export default function SetRow({ set, index, onUpdate, onDelete }) {
                 className="btn"
                 style={{
                     padding: '0.5rem',
-                    backgroundColor: set.completed ? 'var(--color-success)' : 'rgba(255,255,255,0.1)',
+                    backgroundColor: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'rgba(255,255,255,0.1)',
                     color: set.completed ? '#000' : 'var(--text-primary)',
                     border: 'none',
                     width: '36px',
-                    height: '36px'
+                    height: '36px',
+                    zIndex: 1
                 }}
-                onClick={() => handleChange('completed', !set.completed)}
+                onClick={handleToggleComplete}
             >
                 <Check size={18} />
             </button>

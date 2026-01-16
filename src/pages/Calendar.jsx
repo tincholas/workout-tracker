@@ -3,13 +3,13 @@ import { useWorkout } from '../store/WorkoutContext';
 import { SPLIT_COLORS } from '../store/models';
 import VolumeChart from '../components/VolumeChart';
 import CardioChart from '../components/CardioChart';
-import { ChevronLeft, ChevronRight, X, Share2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Share2, Trophy } from 'lucide-react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function Calendar() {
-    const { history, preferredUnit } = useWorkout();
+    const { history, preferredUnit, extraTypes, personalRecords } = useWorkout();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
 
@@ -20,6 +20,21 @@ export default function Calendar() {
     const month = currentDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
+
+    // Helper to get workout color
+    const getWorkoutColor = (workout) => {
+        // 1. Check if it's a known Standard Type (and not Custom)
+        if (SPLIT_COLORS[workout.type] && workout.type !== 'Custom') {
+            return SPLIT_COLORS[workout.type];
+        }
+
+        // 2. If it's Custom (or unknown), check extraTypes for a name match
+        const customType = extraTypes.find(t => t.name === workout.name);
+        if (customType) return customType.color;
+
+        // 3. Fallback
+        return SPLIT_COLORS['Custom'] || '#a3a3a3';
+    };
 
     // Map workouts to dates
     const workoutsByDate = useMemo(() => {
@@ -62,9 +77,14 @@ export default function Calendar() {
             } else {
                 text += `\n`;
                 const completedSets = ex.sets.filter(s => s.completed);
+
+                // Find Share PR (Max Vol Set)
+                const prRecord = personalRecords[ex.name]; // { volume, setId }
+
                 if (completedSets.length > 0) {
                     completedSets.forEach((s, i) => {
-                        text += `   • ${s.weight}kg x ${s.reps}\n`;
+                        const isPR = prRecord && prRecord.setId === s.id;
+                        text += `   • ${s.weight}kg x ${s.reps}${isPR ? ' 🏆' : ''}\n`;
                     });
                 } else {
                     text += `   (No completed sets)\n`;
@@ -132,7 +152,7 @@ export default function Calendar() {
                                     width: '6px',
                                     height: '6px',
                                     borderRadius: '50%',
-                                    backgroundColor: SPLIT_COLORS[w.type] || '#fff'
+                                    backgroundColor: getWorkoutColor(w)
                                 }}
                             />
                         ))}
@@ -252,44 +272,56 @@ export default function Calendar() {
 
                     {selectedDay.workouts.map(w => (
                         <div key={w.id} style={{ marginBottom: '2rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderLeft: `4px solid ${SPLIT_COLORS[w.type]}`, paddingLeft: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderLeft: `4px solid ${getWorkoutColor(w)}`, paddingLeft: '1rem' }}>
                                 <h3 style={{ margin: 0 }}>{w.name}</h3>
                                 <button className="btn" onClick={() => handleShare(w)} style={{ padding: '0.5rem', color: 'var(--primary)' }}>
                                     <Share2 size={20} />
                                 </button>
                             </div>
                             <div style={{ display: 'grid', gap: '1rem' }}>
-                                {w.exercises.map(ex => (
-                                    <div key={ex.id} className="card" style={{ padding: '1rem' }}>
-                                        <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{ex.name}</div>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                            {ex.target === 'Cardio' ? (
-                                                <span style={{
-                                                    background: 'rgba(34, 197, 94, 0.2)',
-                                                    color: '#22c55e',
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: '4px',
-                                                    fontSize: '0.9rem'
-                                                }}>
-                                                    {((ex.accumulatedSeconds || 0) / 60).toFixed(1)} mins
-                                                </span>
-                                            ) : (
-                                                ex.sets.map((s, i) => (
-                                                    s.completed && (
-                                                        <span key={i} style={{
-                                                            background: 'rgba(255,255,255,0.1)',
-                                                            padding: '0.25rem 0.5rem',
-                                                            borderRadius: '4px',
-                                                            fontSize: '0.8rem'
-                                                        }}>
-                                                            {s.weight}kg x {s.reps}
-                                                        </span>
-                                                    )
-                                                ))
-                                            )}
+                                {w.exercises.map(ex => {
+                                    // Use stored record ID for O(1) matching
+                                    const prRecord = personalRecords[ex.name];
+
+                                    return (
+                                        <div key={ex.id} className="card" style={{ padding: '1rem' }}>
+                                            <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{ex.name}</div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                {ex.target === 'Cardio' ? (
+                                                    <span style={{
+                                                        background: 'rgba(34, 197, 94, 0.2)',
+                                                        color: '#22c55e',
+                                                        padding: '0.25rem 0.5rem',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.9rem'
+                                                    }}>
+                                                        {((ex.accumulatedSeconds || 0) / 60).toFixed(1)} mins
+                                                    </span>
+                                                ) : (
+                                                    ex.sets.map((s, i) => {
+                                                        const isPR = prRecord && prRecord.setId === s.id;
+
+                                                        return s.completed && (
+                                                            <span key={i} style={{
+                                                                background: 'rgba(255,255,255,0.1)',
+                                                                padding: '0.25rem 0.5rem',
+                                                                borderRadius: '4px',
+                                                                fontSize: '0.8rem',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px',
+                                                                border: isPR ? '1px solid #eab308' : 'none'
+                                                            }}>
+                                                                {s.weight}kg x {s.reps}
+                                                                {isPR && <Trophy size={10} color="#eab308" />}
+                                                            </span>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         </div>
                     ))

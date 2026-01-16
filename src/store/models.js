@@ -16,6 +16,19 @@ export const SPLIT_COLORS = {
     [EXERCISE_TYPES.CUSTOM]: '#a3a3a3' // Grey
 };
 
+export const TARGET_COLORS = {
+    'Chest': '#ef4444', // Red
+    'Triceps': '#f87171', // Light Red
+    'Back': '#3b82f6', // Blue
+    'Biceps': '#60a5fa', // Light Blue
+    'Shoulders': '#eab308', // Yellow
+    'Legs': '#22c55e', // Green
+    'Core': '#a855f7', // Purple
+    'Other': '#64748b', // Slate
+    'Cardio': '#10b981', // Emerald
+    'Custom': '#64748b', // Slate
+};
+
 export const MUSCLE_GROUPS = [
     'Back',
     'Biceps',

@@ -1,12 +1,25 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SetRow from './SetRow';
 import CardioTimer from './CardioTimer';
 import RestTimer from './RestTimer';
 import { useWorkout } from '../store/WorkoutContext';
-import { RefreshCw, Plus, Minus, Trash2 } from 'lucide-react';
+import { RefreshCw, Plus, Minus, Trash2, MoreVertical, ArrowUp, ArrowDown } from 'lucide-react';
 
 export default function ExerciseCard({ exercise, onSwap }) {
-    const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer } = useWorkout();
+    const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise } = useWorkout();
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleSetUpdate = (setId, updates) => {
         updateSet(exercise.id, setId, updates);
@@ -18,6 +31,31 @@ export default function ExerciseCard({ exercise, onSwap }) {
     };
 
     const isResting = activeRestTimer && activeRestTimer.exerciseId === exercise.id;
+
+    // --- PR Logic (Single Best Set) ---
+    const { personalRecords } = useWorkout();
+
+    const activePRSetId = React.useMemo(() => {
+        // Start with historical best
+        let maxVol = personalRecords[exercise.name]?.volume || 0;
+        let bestSetId = null;
+
+        // Iterate strictly in order (index 0 to N)
+        // If a set BEATS the current max, it takes the crown.
+        exercise.sets.forEach(s => {
+            if (s.completed && s.weight > 0 && s.reps > 0) {
+                const vol = s.weight * s.reps;
+                // Strict inequality: Must beat history AND any previous PR set in this session.
+                if (vol > maxVol) {
+                    maxVol = vol;
+                    bestSetId = s.id;
+                }
+            }
+        });
+
+        // If bestSetId is still null, it means no set beat the history.
+        return bestSetId;
+    }, [exercise.sets, exercise.name, personalRecords]);
 
     return (
         <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
@@ -32,13 +70,55 @@ export default function ExerciseCard({ exercise, onSwap }) {
                         />
                     )}
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-secondary" onClick={() => onSwap(exercise.id)} style={{ padding: '0.4rem' }}>
-                        <RefreshCw size={16} />
+
+                <div style={{ position: 'relative' }} ref={menuRef}>
+                    <button
+                        className="btn"
+                        onClick={() => setShowMenu(!showMenu)}
+                        style={{ background: 'transparent', border: 'none', padding: '0.5rem', color: 'var(--text-muted)' }}
+                    >
+                        <MoreVertical size={20} />
                     </button>
-                    <button className="btn btn-danger" onClick={() => removeExercise(exercise.id)} style={{ padding: '0.4rem', color: '#ef4444', borderColor: '#ef4444' }}>
-                        <Trash2 size={16} />
-                    </button>
+
+                    {showMenu && (
+                        <div style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: '100%',
+                            background: '#1a1a1a',
+                            border: '1px solid #333',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                            zIndex: 10,
+                            minWidth: '160px',
+                            overflow: 'hidden'
+                        }}>
+                            <button
+                                onClick={() => { reorderExercise(exercise.id, 'UP'); setShowMenu(false); }}
+                                style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                            >
+                                <ArrowUp size={16} /> Move Up
+                            </button>
+                            <button
+                                onClick={() => { reorderExercise(exercise.id, 'DOWN'); setShowMenu(false); }}
+                                style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                            >
+                                <ArrowDown size={16} /> Move Down
+                            </button>
+                            <button
+                                onClick={() => { onSwap(exercise.id); setShowMenu(false); }}
+                                style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                            >
+                                <RefreshCw size={16} /> Replace
+                            </button>
+                            <button
+                                onClick={() => { removeExercise(exercise.id); setShowMenu(false); }}
+                                style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#ef4444', textAlign: 'left', cursor: 'pointer' }}
+                            >
+                                <Trash2 size={16} /> Remove
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -65,6 +145,8 @@ export default function ExerciseCard({ exercise, onSwap }) {
                                 set={set}
                                 index={index}
                                 onUpdate={(updates) => handleSetUpdate(set.id, updates)}
+                                exerciseName={exercise.name}
+                                isPR={set.id === activePRSetId}
                             />
                         ))}
                     </div>

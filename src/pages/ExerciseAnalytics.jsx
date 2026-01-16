@@ -2,46 +2,30 @@ import React, { useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import { MUSCLE_GROUPS } from '../store/models';
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend,
-} from 'chart.js';
+import '../utils/chartSetup';
 import { Line } from 'react-chartjs-2';
 import { ArrowLeft } from 'lucide-react';
-
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend
-);
+import { TARGET_COLORS } from '../store/models';
 
 export default function ExerciseAnalytics() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const exerciseName = searchParams.get('exercise');
+    const targetGroup = searchParams.get('target');
     const { history, renameExercise } = useWorkout();
     const [isEditing, setIsEditing] = React.useState(false);
     const [editName, setEditName] = React.useState(exerciseName || '');
 
-    // Find current target from history
+    // Find current target from history (only used for single exercise mode)
     const currentTarget = React.useMemo(() => {
+        if (targetGroup) return targetGroup; // If viewing a group, that is the target
         if (!history || !exerciseName) return '';
         for (const w of history) {
             const ex = w.exercises.find(e => e.name === exerciseName);
             if (ex && ex.target) return ex.target;
         }
         return '';
-    }, [history, exerciseName]);
+    }, [history, exerciseName, targetGroup]);
 
     const [editTarget, setEditTarget] = React.useState(currentTarget);
 
@@ -51,88 +35,125 @@ export default function ExerciseAnalytics() {
     }, [currentTarget]);
 
     const chartData = useMemo(() => {
-        if (!history || !exerciseName) return null;
+        if (!history) return null;
+        if (!exerciseName && !targetGroup) return null;
 
-        // 1. Filter workouts containing the exercise
-        const relevantWorkouts = history
-            .filter(w => w.exercises.some(ex => ex.name === exerciseName));
+        let datasets = [];
+        let allDates = new Set();
+        const dateValuesMap = {}; // { 'YYYY-MM-DD': { 'Bench Press': 100, 'Push Ups': 20 } }
 
-        if (relevantWorkouts.length === 0) return null;
-
-        // 2. Aggregate Max Weight OR Duration by Date
-        const dateMap = new Map();
-        relevantWorkouts.forEach(w => {
-            // Use YYYY-MM-DD for consistent sorting keys
-            const d = new Date(w.startTime);
-            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-            const ex = w.exercises.find(e => e.name === exerciseName);
-
+        // Helper to process an exercise
+        const processExercise = (ex, dateKey) => {
             let val = 0;
-            if (ex) {
-                if (ex.target === 'Cardio') {
-                    // Calculate Total Minutes
-                    // stored as accumulatedSeconds
-                    const seconds = ex.accumulatedSeconds || 0;
-                    val = Number((seconds / 60).toFixed(2)); // Minutes
-                } else {
-                    // Max Weight
-                    val = Math.max(...ex.sets.map(s => Number(s.weight) || 0));
-                }
+            if (ex.target === 'Cardio') {
+                const seconds = ex.accumulatedSeconds || 0;
+                val = Number((seconds / 60).toFixed(2));
+            } else {
+                val = Math.max(...ex.sets.map(s => Number(s.weight) || 0));
             }
 
-            if (!dateMap.has(key) || val > dateMap.get(key)) {
-                // For cardio on same day, maybe sum? 
-                // "evolution of how many minutes you have done per workout"
-                // Usually analytics show per workout. If multiple workouts on same day, maybe max or sum.
-                // Weight is max. Cardio volume usually sum?
-                // But let's stick to "Session Best" logic or "Session Total"?
-                // If I run twice, I probably want to know my total mileage?
-                // Let's keep it max for now to be consistent with weight logic, OR overwrite if later.
-                // Actually, if I run 10 mins then 20 mins, max is 20.
-                // If I do 100kg then 110kg, max is 110.
-                // Let's use MAX for now for consistency, but maybe SUM is better for cardio volume.
-                // User said: "evolution of how many minutes you have done per workout" -> Implies per session.
+            // If multiple same exercises in one day, take max
+            if (!dateValuesMap[dateKey]) dateValuesMap[dateKey] = {};
 
-                // If I have multiple cardio sessions in one day, I'll take the longest one??
-                // Or maybe I should sum them if they are in the *same* workout? (Already handled by array find).
-                // If different workouts on same day:
-                // Let's use val > current ? val : current (MAX behavior)
-                dateMap.set(key, val);
+            const currentVal = dateValuesMap[dateKey][ex.name] || 0;
+            dateValuesMap[dateKey][ex.name] = Math.max(currentVal, val);
+        };
+
+        // Filter Relevant Workouts
+        const relevantWorkouts = history.filter(w => {
+            if (targetGroup) {
+                return w.exercises.some(ex => ex.target === targetGroup);
+            } else {
+                return w.exercises.some(ex => ex.name === exerciseName);
             }
         });
 
-        const sortedKeys = Array.from(dateMap.keys()).sort();
+        if (relevantWorkouts.length === 0) return null;
 
+        relevantWorkouts.forEach(w => {
+            const d = new Date(w.startTime);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            allDates.add(key);
+
+            w.exercises.forEach(ex => {
+                if (targetGroup) {
+                    if (ex.target === targetGroup) {
+                        processExercise(ex, key);
+                    }
+                } else {
+                    if (ex.name === exerciseName) {
+                        processExercise(ex, key);
+                    }
+                }
+            });
+        });
+
+        const sortedKeys = Array.from(allDates).sort();
         const labels = sortedKeys.map(k => {
             const [y, m, d] = k.split('-');
             return `${d}/${m}`;
         });
 
-        const dataPoints = sortedKeys.map(k => dateMap.get(k));
+        // Generate Datasets
+        if (targetGroup) {
+            // Find all unique exercise names in this group
+            const uniqueNames = new Set();
+            Object.values(dateValuesMap).forEach(dayMap => {
+                Object.keys(dayMap).forEach(name => uniqueNames.add(name));
+            });
 
-        const isCardio = currentTarget === 'Cardio';
+            Array.from(uniqueNames).forEach((name, index) => {
+                const dataPoints = sortedKeys.map(k => dateValuesMap[k]?.[name] || null); // Use null for gaps
+
+                // Color Generation
+                const hue = (index * 137.508) % 360; // Golden angle approximation for distinct colors
+                const color = `hsl(${hue}, 70%, 50%)`;
+
+                datasets.push({
+                    label: name,
+                    data: dataPoints,
+                    borderColor: color,
+                    backgroundColor: color,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    spanGaps: true
+                });
+            });
+
+        } else {
+            // Single Exercise
+            const dataPoints = sortedKeys.map(k => dateValuesMap[k]?.[exerciseName] || 0);
+            const isCardio = currentTarget === 'Cardio';
+
+            datasets.push({
+                label: isCardio ? 'Duration (Minutes)' : 'Max Weight (kg)',
+                data: dataPoints,
+                borderColor: isCardio ? TARGET_COLORS.Cardio : TARGET_COLORS.Chest, // Default to Red (Chest) for strength
+                backgroundColor: isCardio ? `${TARGET_COLORS.Cardio}80` : `${TARGET_COLORS.Chest}80`, // Add opacity
+                tension: 0.3,
+                pointRadius: 4,
+            });
+        }
 
         return {
             labels,
-            datasets: [
-                {
-                    label: isCardio ? 'Duration (Minutes)' : 'Max Weight (kg)',
-                    data: dataPoints,
-                    borderColor: isCardio ? '#22c55e' : '#ef4444',
-                    backgroundColor: isCardio ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
-                    tension: 0.3,
-                    pointRadius: 4,
-                },
-            ],
+            datasets: datasets
         };
-    }, [history, exerciseName, currentTarget]);
+    }, [history, exerciseName, targetGroup, currentTarget]);
 
     const options = {
         responsive: true,
         plugins: {
-            legend: { position: 'top', labels: { color: '#a3a3a3' } },
-            title: { display: true, text: 'Strength Progression', color: '#fff' },
+            legend: { position: 'top', labels: { color: '#a3a3a3', boxWidth: 12 } },
+            title: {
+                display: true,
+                text: targetGroup ? `${targetGroup} Progression` : 'Strength Progression',
+                color: '#fff'
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+            }
         },
         scales: {
             y: {
@@ -144,6 +165,11 @@ export default function ExerciseAnalytics() {
                 grid: { color: 'rgba(255,255,255,0.1)' },
                 ticks: { color: '#a3a3a3' }
             }
+        },
+        interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
         }
     };
 
@@ -164,7 +190,7 @@ export default function ExerciseAnalytics() {
         setIsEditing(false);
     };
 
-    if (!exerciseName) return <div style={{ padding: '1rem' }}>No exercise selected</div>;
+    if (!exerciseName && !targetGroup) return <div style={{ padding: '1rem' }}>No data selected</div>;
 
     return (
         <div style={{ padding: 'var(--space-md)' }}>
@@ -176,40 +202,48 @@ export default function ExerciseAnalytics() {
                 <ArrowLeft size={16} /> Back
             </button>
 
-            {isEditing ? (
-                <form onSubmit={handleRename} style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '300px' }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Name</label>
-                    <input
-                        className="input"
-                        autoFocus
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                    />
+            {!targetGroup && (
+                isEditing ? (
+                    <form onSubmit={handleRename} style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '300px' }}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Name</label>
+                        <input
+                            className="input"
+                            autoFocus
+                            value={editName}
+                            onChange={e => setEditName(e.target.value)}
+                        />
 
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Muscle Group</label>
-                    <select
-                        className="input"
-                        style={{ padding: '0.8rem', backgroundColor: '#1f2937', color: '#fff', border: '1px solid #444' }}
-                        value={editTarget}
-                        onChange={e => setEditTarget(e.target.value)}
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Muscle Group</label>
+                        <select
+                            className="input"
+                            style={{ padding: '0.8rem', backgroundColor: '#1f2937', color: '#fff', border: '1px solid #444' }}
+                            value={editTarget}
+                            onChange={e => setEditTarget(e.target.value)}
+                        >
+                            <option value="" style={{ backgroundColor: '#1f2937' }}>Select (Optional)</option>
+                            {MUSCLE_GROUPS.map(g => (
+                                <option key={g} value={g} style={{ backgroundColor: '#1f2937' }}>{g}</option>
+                            ))}
+                        </select>
+
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            <button type="submit" className="btn btn-primary">Save</button>
+                            <button type="button" className="btn" onClick={() => setIsEditing(false)}>Cancel</button>
+                        </div>
+                    </form>
+                ) : (
+                    <h1
+                        style={{ marginBottom: 'var(--space-lg)', cursor: 'text', borderBottom: '1px dashed #333', display: 'inline-block' }}
+                        onClick={() => { setEditName(exerciseName); setIsEditing(true); }}
                     >
-                        <option value="" style={{ backgroundColor: '#1f2937' }}>Select (Optional)</option>
-                        {MUSCLE_GROUPS.map(g => (
-                            <option key={g} value={g} style={{ backgroundColor: '#1f2937' }}>{g}</option>
-                        ))}
-                    </select>
+                        {exerciseName} <span style={{ fontSize: '0.4em', color: 'var(--text-muted)', verticalAlign: 'middle' }}>(Edit)</span>
+                    </h1>
+                )
+            )}
 
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                        <button type="submit" className="btn btn-primary">Save</button>
-                        <button type="button" className="btn" onClick={() => setIsEditing(false)}>Cancel</button>
-                    </div>
-                </form>
-            ) : (
-                <h1
-                    style={{ marginBottom: 'var(--space-lg)', cursor: 'text', borderBottom: '1px dashed #333', display: 'inline-block' }}
-                    onClick={() => { setEditName(exerciseName); setIsEditing(true); }}
-                >
-                    {exerciseName} <span style={{ fontSize: '0.4em', color: 'var(--text-muted)', verticalAlign: 'middle' }}>(Edit)</span>
+            {targetGroup && (
+                <h1 style={{ marginBottom: 'var(--space-lg)' }}>
+                    {targetGroup} <span style={{ fontSize: '0.5em', color: 'var(--text-muted)' }}>Group Analysis</span>
                 </h1>
             )}
 
@@ -217,7 +251,7 @@ export default function ExerciseAnalytics() {
                 {chartData ? (
                     <Line options={options} data={chartData} />
                 ) : (
-                    <p style={{ color: 'var(--text-muted)' }}>No data recorded for this exercise yet.</p>
+                    <p style={{ color: 'var(--text-muted)' }}>No data recorded for this selection yet.</p>
                 )}
             </div>
         </div>

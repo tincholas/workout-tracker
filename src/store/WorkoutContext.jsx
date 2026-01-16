@@ -40,6 +40,38 @@ export const WorkoutProvider = ({ children }) => {
         }));
     };
 
+    // Calculate Personal Records (Max Volume per Exercise)
+    // Returns: { "Exercise Name": { volume: 100, setId: "abc-123", date: "..." } }
+    const personalRecords = React.useMemo(() => {
+        const records = {}; // { exName: { volume: 0, setId: null } }
+
+        // We must sort history chronologically to ensure "First-to-achieve" rule works correctly
+        const sortedHistory = [...(history || [])].sort((a, b) => new Date(a.endTime) - new Date(b.endTime));
+
+        sortedHistory.forEach(workout => {
+            if (!workout.exercises) return;
+            workout.exercises.forEach(ex => {
+                ex.sets.forEach(s => {
+                    if (s.completed && s.weight > 0 && s.reps > 0) {
+                        const vol = s.weight * s.reps;
+                        const existing = records[ex.name] || { volume: 0, setId: null };
+
+                        // Strict strict inequality: Only update if strictly higher.
+                        // This preserves the "First Set" as the record holder in case of ties.
+                        if (vol > existing.volume) {
+                            records[ex.name] = {
+                                volume: vol,
+                                setId: s.id,
+                                date: workout.endTime
+                            };
+                        }
+                    }
+                });
+            });
+        });
+        return records;
+    }, [history]);
+
     // Initialize DB and Load Data
     useEffect(() => {
         const loadData = async () => {
@@ -100,11 +132,12 @@ export const WorkoutProvider = ({ children }) => {
         setPreferredUnit(prev => prev === 'KG' ? 'LBS' : 'KG');
     };
 
-    const createCustomType = (name, color) => {
+    const createCustomType = (name, color, icon) => {
         const newType = {
             id: crypto.randomUUID(),
             name,
             color,
+            icon, // Store the icon name string
             isCustom: true
         };
         setExtraTypes([...extraTypes, newType]);
@@ -253,6 +286,26 @@ export const WorkoutProvider = ({ children }) => {
         setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
     };
 
+    const reorderExercise = (exerciseId, direction) => {
+        if (!activeWorkout) return;
+        const exercises = [...activeWorkout.exercises];
+        const index = exercises.findIndex(ex => ex.id === exerciseId);
+
+        if (index === -1) return;
+        if (direction === 'UP' && index === 0) return;
+        if (direction === 'DOWN' && index === exercises.length - 1) return;
+
+        const targetIndex = direction === 'UP' ? index - 1 : index + 1;
+
+        // Swap
+        [exercises[index], exercises[targetIndex]] = [exercises[targetIndex], exercises[index]];
+
+        setActiveWorkout({
+            ...activeWorkout,
+            exercises
+        });
+    };
+
     // Global Rename function
     const renameExercise = (oldName, newName, newTarget = null) => {
         // 1. Update History
@@ -387,6 +440,7 @@ export const WorkoutProvider = ({ children }) => {
             addExercise,
             removeExercise,
             swapExercise,
+            reorderExercise,
             renameExercise,
             toggleUnit,
             preferredUnit,
@@ -400,7 +454,8 @@ export const WorkoutProvider = ({ children }) => {
             activeRestTimer,
             startRestTimer,
             cancelRestTimer,
-            extendRestTimer
+            extendRestTimer,
+            personalRecords
         }}>
             {children}
         </WorkoutContext.Provider>

@@ -43,7 +43,23 @@ export default function ExerciseHistory() {
             <div style={{ display: 'grid', gap: '1.5rem' }}>
                 {targets.map(target => (
                     <div key={target}>
-                        <h3 style={{ marginLeft: '0.5rem', marginBottom: '0.5rem', color: 'var(--color-primary)', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '1px' }}>{target}</h3>
+                        <h3
+                            style={{
+                                marginLeft: '0.5rem',
+                                marginBottom: '0.5rem',
+                                color: 'var(--color-primary)',
+                                textTransform: 'uppercase',
+                                fontSize: '0.9rem',
+                                letterSpacing: '1px',
+                                cursor: 'pointer',
+                                display: 'inline-block'
+                            }}
+                            onClick={() => navigate(`/analytics?target=${encodeURIComponent(target)}`)}
+                            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+                        >
+                            {target}
+                        </h3>
                         <div style={{ display: 'grid', gap: '0.5rem' }}>
                             {Array.from(exercisesByTarget[target]).sort().map(name => (
                                 <div

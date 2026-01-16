@@ -47,8 +47,8 @@ function App() {
         </Link>
 
         <Link to={activeWorkout ? '/session' : '/'} style={{
-          color: (location.pathname === '/' || location.pathname === '/session') ? '#000' : 'var(--text-muted)',
-          background: 'var(--color-primary)',
+          color: (location.pathname === '/' || location.pathname === '/session') ? '#000' : '#fff',
+          background: (location.pathname === '/' || location.pathname === '/session') ? 'var(--color-primary)' : 'var(--text-muted)',
           borderRadius: '50%',
           width: '52px', // Slightly larger than 26px icons (standard button size)
           height: '52px',
@@ -56,10 +56,10 @@ function App() {
           alignItems: 'center',
           justifyContent: 'center',
           marginTop: '-24px', // Reduced float
-          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+          boxShadow: (location.pathname === '/' || location.pathname === '/session') ? '0 4px 12px rgba(16, 185, 129, 0.3)' : 'none',
           border: '3px solid #111'
         }}>
-          <Dumbbell size={28} color="#000" strokeWidth={2.5} />
+          <Dumbbell size={28} color={(location.pathname === '/' || location.pathname === '/session') ? '#000' : '#fff'} strokeWidth={2.5} />
         </Link>
 
         <Link to="/history" style={{

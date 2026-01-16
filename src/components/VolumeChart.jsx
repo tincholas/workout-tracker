@@ -1,24 +1,7 @@
 import React, { useMemo } from 'react';
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-} from 'chart.js';
+import '../utils/chartSetup';
 import { Bar } from 'react-chartjs-2';
-import { SPLIT_COLORS } from '../store/models';
-
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend
-);
+import { TARGET_COLORS } from '../store/models';
 
 export default function VolumeChart({ history, currentMonth, currentYear }) {
     const chartData = useMemo(() => {
@@ -62,21 +45,8 @@ export default function VolumeChart({ history, currentMonth, currentYear }) {
             });
         });
 
-        // Color Mapping Helper
-        const MUSCLE_COLOR_MAP = {
-            'Chest': '#ef4444', // Red
-            'Triceps': '#f87171', // Light Red
-            'Back': '#3b82f6', // Blue
-            'Biceps': '#60a5fa', // Light Blue
-            'Shoulders': '#eab308', // Yellow
-            'Legs': '#22c55e', // Green
-            'Core': '#a855f7', // Purple
-            'Other': '#64748b', // Slate
-            'Custom': '#64748b', // Slate
-        };
-
         const getColor = (target) => {
-            if (MUSCLE_COLOR_MAP[target]) return MUSCLE_COLOR_MAP[target];
+            if (TARGET_COLORS[target]) return TARGET_COLORS[target];
 
             // Fallback for unknown
             const hash = target.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
