@@ -6,6 +6,7 @@ import '../utils/chartSetup';
 import { Line } from 'react-chartjs-2';
 import { ArrowLeft } from 'lucide-react';
 import { TARGET_COLORS } from '../store/models';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 export default function ExerciseAnalytics() {
     const [searchParams] = useSearchParams();
@@ -13,6 +14,7 @@ export default function ExerciseAnalytics() {
     const exerciseName = searchParams.get('exercise');
     const targetGroup = searchParams.get('target');
     const { history, renameExercise } = useWorkout();
+    const { textMuted, textPrimary, borderSubtle } = useThemeColors();
     const [isEditing, setIsEditing] = React.useState(false);
     const [editName, setEditName] = React.useState(exerciseName || '');
 
@@ -144,11 +146,11 @@ export default function ExerciseAnalytics() {
     const options = {
         responsive: true,
         plugins: {
-            legend: { position: 'top', labels: { color: '#a3a3a3', boxWidth: 12 } },
+            legend: { position: 'top', labels: { color: textMuted, boxWidth: 12 } },
             title: {
                 display: true,
                 text: targetGroup ? `${targetGroup} Progression` : 'Strength Progression',
-                color: '#fff'
+                color: textPrimary
             },
             tooltip: {
                 mode: 'index',
@@ -157,13 +159,15 @@ export default function ExerciseAnalytics() {
         },
         scales: {
             y: {
-                grid: { color: 'rgba(255,255,255,0.1)' },
-                ticks: { color: '#a3a3a3' },
+                grid: { color: borderSubtle },
+                border: { display: false },
+                ticks: { color: textMuted },
                 beginAtZero: true
             },
             x: {
-                grid: { color: 'rgba(255,255,255,0.1)' },
-                ticks: { color: '#a3a3a3' }
+                grid: { color: borderSubtle },
+                border: { display: false },
+                ticks: { color: textMuted }
             }
         },
         interaction: {
@@ -216,13 +220,13 @@ export default function ExerciseAnalytics() {
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Muscle Group</label>
                         <select
                             className="input"
-                            style={{ padding: '0.8rem', backgroundColor: '#1f2937', color: '#fff', border: '1px solid #444' }}
+                            style={{ padding: '0.8rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
                             value={editTarget}
                             onChange={e => setEditTarget(e.target.value)}
                         >
-                            <option value="" style={{ backgroundColor: '#1f2937' }}>Select (Optional)</option>
+                            <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>Select (Optional)</option>
                             {MUSCLE_GROUPS.map(g => (
-                                <option key={g} value={g} style={{ backgroundColor: '#1f2937' }}>{g}</option>
+                                <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
                             ))}
                         </select>
 

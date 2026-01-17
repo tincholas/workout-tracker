@@ -10,6 +10,8 @@
   --shadow-light: rgba(255, 255, 255, 0.08);
   --shadow-dark: rgba(0, 0, 0, 0.5);
 
+  --bg-overlay: rgba(0, 0, 0, 0.85);
+
   --shadow-convex:
     6px 6px 12px var(--shadow-dark),
     -6px -6px 12px var(--shadow-light);
@@ -29,6 +31,9 @@
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+
   /* Spacing */
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -44,6 +49,36 @@
 
   /* Transitions */
   --ease-spring: cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Colors - Neumorphic Light Mode */
+    --bg-app: #e4ebf5;
+    --bg-card: #e4ebf5;
+    --bg-input: #e4ebf5;
+
+    /* Shadows */
+    --shadow-light: #ffffff;
+    --shadow-dark: #c8d0e7;
+
+    --bg-overlay: rgba(228, 235, 245, 0.9);
+
+    /* Accents - Purple Theme */
+    --color-primary: #8b5cf6;
+    /* Violet 500 */
+    --color-primary-glow: rgba(139, 92, 246, 0.4);
+
+    /* Text */
+    --text-primary: #334155;
+    /* Slate 700 */
+    --text-secondary: #64748b;
+    /* Slate 500 */
+    --text-muted: #94a3b8;
+    /* Slate 400 */
+
+    --border-subtle: rgba(0, 0, 0, 0.03);
+  }
 }
 
 body {

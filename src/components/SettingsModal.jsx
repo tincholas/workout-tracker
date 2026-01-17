@@ -78,7 +78,7 @@ export default function SettingsModal({ onClose }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             style={{
-                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200,
+                position: 'fixed', inset: 0, background: 'var(--bg-overlay)', zIndex: 200,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
             }}
         >
@@ -144,9 +144,9 @@ export default function SettingsModal({ onClose }) {
                     </button>
 
                     {/* Rest Timer Settings */}
-                    <div className="card" style={{ padding: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div className="card" style={{ padding: '1rem', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <label style={{ fontWeight: 'bold', color: restTimer.seconds > 0 ? '#fff' : 'var(--text-muted)' }}>Default Rest Timer</label>
+                            <label style={{ fontWeight: 'bold', color: restTimer.seconds > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>Default Rest Timer</label>
                             <input
                                 type="checkbox"
                                 checked={restTimer.enabled}
@@ -178,10 +178,10 @@ export default function SettingsModal({ onClose }) {
                 </div>
 
                 {/* About */}
-                <div style={{ marginTop: '1rem', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: '1.6' }}>
+                <div style={{ marginTop: '1rem', textAlign: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: '1.6' }}>
                     <p style={{ margin: 0 }}>Version {__APP_VERSION__}</p>
                     <p style={{ margin: 0 }}>Updated: {__BUILD_DATE__}</p>
-                    <p style={{ margin: '0.5rem 0 0 0', color: '#fff' }}>&copy; Martin Nanni {new Date().getFullYear()}</p>
+                    <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-primary)' }}>&copy; Martin Nanni {new Date().getFullYear()}</p>
                 </div>
             </motion.div>
         </motion.div>

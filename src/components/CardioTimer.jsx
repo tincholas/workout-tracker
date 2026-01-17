@@ -101,9 +101,9 @@ export default function CardioTimer({ exercise }) {
     };
 
     // Visuals
-    // White until target reached, then Green.
-    const displayColor = isTargetMet ? '#22c55e' : '#ffffff';
-    const borderColor = isTargetMet ? '#22c55e' : '#ffffff';
+    // Primary/Success until target reached
+    const displayColor = isTargetMet ? 'var(--color-success)' : 'var(--text-primary)';
+    const borderColor = isTargetMet ? 'var(--color-success)' : 'var(--border-subtle)';
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem' }}>
@@ -153,7 +153,7 @@ export default function CardioTimer({ exercise }) {
             {/* Timer Display */}
             {(exercise.timerState !== 'idle' || isRunning) && (
                 <div style={{
-                    background: 'rgba(0,0,0,0.3)',
+                    background: 'var(--bg-input)',
                     borderRadius: '8px',
                     padding: '1.5rem',
                     display: 'flex',

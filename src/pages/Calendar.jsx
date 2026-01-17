@@ -144,7 +144,7 @@ export default function Calendar() {
                     }}
                     onClick={() => handleDayClick(day)}
                 >
-                    <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{day}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{day}</span>
                     <div style={{ display: 'flex', gap: '2px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}>
                         {workouts.map((w, idx) => (
                             <div
@@ -247,14 +247,14 @@ export default function Calendar() {
 
             {hasSetsData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Volume ({preferredUnit})</h3>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>Daily Volume ({preferredUnit})</h3>
                     <VolumeChart history={history} currentMonth={month} currentYear={year} />
                 </div>
             )}
 
             {hasCardioData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#a3a3a3' }}>Daily Cardio (Minutes)</h3>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>Daily Cardio (Minutes)</h3>
                     <CardioChart history={history} currentMonth={month} currentYear={year} />
                 </div>
             )}
@@ -262,7 +262,7 @@ export default function Calendar() {
             {/* Details Modal */}
             {selectedDay && (
                 <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(30, 30, 35, 0.95)', zIndex: 150,
+                    position: 'fixed', inset: 0, background: 'var(--bg-app)', zIndex: 150,
                     padding: '2rem', overflowY: 'auto'
                 }}>
                     <button className="btn" style={{ position: 'absolute', top: '1rem', right: '1rem' }} onClick={() => setSelectedDay(null)}>

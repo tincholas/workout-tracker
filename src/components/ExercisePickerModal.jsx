@@ -74,7 +74,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             style={{
-                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200,
+                position: 'fixed', inset: 0, background: 'var(--bg-overlay)', zIndex: 200,
                 display: 'flex', flexDirection: 'column', padding: '1rem'
             }}
         >
@@ -87,7 +87,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                 <Search size={20} style={{ position: 'absolute', left: 10, top: 12, color: 'var(--text-muted)' }} />
                 <input
                     className="input"
-                    style={{ paddingLeft: '2.5rem', color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none' }}
+                    style={{ paddingLeft: '2.5rem', color: 'var(--text-primary)', backgroundColor: 'var(--bg-input)', border: 'none' }}
                     placeholder="Search..."
                     autoFocus
                     value={searchTerm}
@@ -111,7 +111,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                                     <button
                                         key={ex.name}
                                         className="card"
-                                        style={{ textAlign: 'left', padding: '1rem', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
+                                        style={{ textAlign: 'left', padding: '1rem', cursor: 'pointer', color: 'var(--text-primary)' }}
                                         onClick={() => onSelect(ex)}
                                     >
                                         {ex.name}
@@ -126,16 +126,16 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
                         <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>No matches found.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ color: '#fff', fontSize: '0.9rem' }}>Convert to Custom Exercise:</label>
+                            <label style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>Convert to Custom Exercise:</label>
                             <select
                                 className="input"
-                                style={{ padding: '0.8rem', backgroundColor: '#1f2937', color: '#fff', border: '1px solid #444' }}
+                                style={{ padding: '0.8rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
                                 value={newExerciseTarget}
                                 onChange={e => setNewExerciseTarget(e.target.value)}
                             >
-                                <option value="" style={{ backgroundColor: '#1f2937' }}>Select Muscle Group (Optional)</option>
+                                <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>Select Muscle Group (Optional)</option>
                                 {MUSCLE_GROUPS.map(g => (
-                                    <option key={g} value={g} style={{ backgroundColor: '#1f2937' }}>{g}</option>
+                                    <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
                                 ))}
                             </select>
                             <button

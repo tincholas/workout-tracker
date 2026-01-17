@@ -2,7 +2,10 @@ import React, { useMemo } from 'react';
 import '../utils/chartSetup';
 import { Bar } from 'react-chartjs-2';
 
+import { useThemeColors } from '../hooks/useThemeColors';
+
 export default function CardioChart({ history, currentMonth, currentYear }) {
+    const { textMuted, borderSubtle } = useThemeColors();
     const chartData = useMemo(() => {
         if (!history) return null;
 
@@ -53,17 +56,19 @@ export default function CardioChart({ history, currentMonth, currentYear }) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'bottom', labels: { color: '#a3a3a3', boxWidth: 12 } },
+            legend: { position: 'bottom', labels: { color: textMuted, boxWidth: 12 } },
             title: { display: false },
         },
         scales: {
             x: {
                 grid: { display: false },
-                ticks: { color: '#a3a3a3', maxTicksLimit: 10 }
+                border: { display: false },
+                ticks: { color: textMuted, maxTicksLimit: 10 }
             },
             y: {
-                grid: { color: 'rgba(255,255,255,0.05)' },
-                ticks: { color: '#a3a3a3' } // precision ignored for minutes
+                grid: { color: borderSubtle },
+                border: { display: false },
+                ticks: { color: textMuted } // precision ignored for minutes
             },
         },
     };

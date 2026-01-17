@@ -87,7 +87,7 @@ export default function Home() {
 
     return (
         <div className="page-container" style={{ padding: 'var(--space-lg)' }}>
-            <header style={{ marginBottom: '2rem', textAlign: 'center', color: '#ffffff', position: 'relative' }}>
+            <header style={{ marginBottom: '2rem', textAlign: 'center', color: 'var(--text-primary)', position: 'relative' }}>
                 <button
                     onClick={() => setShowSettings(true)}
                     style={{
@@ -103,7 +103,7 @@ export default function Home() {
                 >
                     <Settings size={24} />
                 </button>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1px', marginBottom: '0.5rem', color: '#ffffff' }}>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1px', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                     IRON <span style={{ color: 'var(--primary)' }}>TRACK</span>
                 </h1>
                 <p style={{ color: 'var(--text-muted)' }}>Select your split to begin</p>
@@ -141,7 +141,7 @@ export default function Home() {
                                 textAlign: 'left',
                                 cursor: 'pointer',
                                 transition: 'transform 0.2s',
-                                color: '#ffffff', // Ensure white text
+                                color: 'var(--text-primary)', // Ensure readability in boith modes
                                 position: 'relative'
                             }}
                         >
@@ -188,7 +188,7 @@ export default function Home() {
                                     width: '100%',
                                     textAlign: 'left',
                                     cursor: 'pointer',
-                                    color: '#ffffff' // Ensure white text
+                                    color: 'var(--text-primary)' // Ensure readability in both modes
                                 }}
                             >
                                 <div style={{
@@ -272,7 +272,7 @@ export default function Home() {
 
                         <form onSubmit={handleCreate}>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#a3a3a3' }}>Name</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Name</label>
                                 <input
                                     type="text"
                                     value={newWorkoutName}
@@ -285,7 +285,7 @@ export default function Home() {
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#a3a3a3' }}>Color</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Color</label>
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                     {COLORS.map(c => (
                                         <div
@@ -303,7 +303,7 @@ export default function Home() {
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#a3a3a3' }}>Icon</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Icon</label>
                                 <div style={{
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(5, 1fr)',
