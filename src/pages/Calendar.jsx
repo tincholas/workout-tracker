@@ -220,7 +220,12 @@ export default function Calendar() {
 
     return (
         <div
-            style={{ padding: 'var(--space-md)' }}
+            style={{
+                padding: 'var(--space-md)',
+                backgroundColor: 'var(--bg-app)',
+                minHeight: '100vh',
+                boxSizing: 'border-box'
+            }}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
                 <h2 style={{ margin: 0 }}>{MONTHS[month]} {year}</h2>

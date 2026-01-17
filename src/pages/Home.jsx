@@ -86,7 +86,12 @@ export default function Home() {
     };
 
     return (
-        <div className="page-container" style={{ padding: 'var(--space-lg)' }}>
+        <div className="page-container" style={{
+            padding: 'var(--space-lg)',
+            backgroundColor: 'var(--bg-app)',
+            minHeight: '100vh',
+            boxSizing: 'border-box'
+        }}>
             <header style={{ marginBottom: '2rem', textAlign: 'center', color: 'var(--text-primary)', position: 'relative' }}>
                 <button
                     onClick={() => setShowSettings(true)}

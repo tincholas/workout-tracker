@@ -37,7 +37,12 @@ export default function ExerciseHistory() {
     const targets = Object.keys(exercisesByTarget).sort();
 
     return (
-        <div style={{ padding: 'var(--space-md)' }}>
+        <div style={{
+            padding: 'var(--space-md)',
+            backgroundColor: 'var(--bg-app)',
+            minHeight: '100vh',
+            boxSizing: 'border-box'
+        }}>
             <h1 style={{ marginBottom: 'var(--space-md)' }}>Exercise History</h1>
 
             <div style={{ display: 'grid', gap: '1.5rem' }}>
