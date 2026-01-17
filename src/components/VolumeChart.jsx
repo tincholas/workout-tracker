@@ -57,8 +57,8 @@ export default function VolumeChart({ history, currentMonth, currentYear }) {
             label: target,
             data: targetDataMap[target],
             backgroundColor: getColor(target),
-            borderColor: '#000',
-            borderWidth: 1,
+            backgroundColor: getColor(target),
+            borderRadius: 4, // Add border radius for consistency with Cardio chart
         }));
 
         return {

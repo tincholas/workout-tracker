@@ -213,7 +213,12 @@ export default function Home() {
                                 )}
                             </button>
                             <button
-                                onClick={(e) => { e.stopPropagation(); deleteCustomType(custom.id); }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Are you sure you want to delete the "${custom.name}" split?`)) {
+                                        deleteCustomType(custom.id);
+                                    }
+                                }}
                                 style={{
                                     position: 'absolute',
                                     right: '1rem',

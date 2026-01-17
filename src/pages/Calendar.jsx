@@ -136,7 +136,8 @@ export default function Calendar() {
                         justifyContent: 'flex-start',
                         padding: '0.25rem',
                         cursor: workouts.length > 0 ? 'pointer' : 'default',
-                        background: workouts.length > 0 ? 'rgba(255,255,255,0.08)' : 'transparent',
+                        background: workouts.length > 0 ? 'var(--bg-card)' : 'transparent',
+                        boxShadow: workouts.length > 0 ? 'var(--shadow-convex)' : 'none',
                         border: 'none',
                         position: 'relative',
                         overflow: 'hidden'
@@ -261,7 +262,7 @@ export default function Calendar() {
             {/* Details Modal */}
             {selectedDay && (
                 <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 150,
+                    position: 'fixed', inset: 0, background: 'rgba(30, 30, 35, 0.95)', zIndex: 150,
                     padding: '2rem', overflowY: 'auto'
                 }}>
                     <button className="btn" style={{ position: 'absolute', top: '1rem', right: '1rem' }} onClick={() => setSelectedDay(null)}>
@@ -272,7 +273,7 @@ export default function Calendar() {
 
                     {selectedDay.workouts.map(w => (
                         <div key={w.id} style={{ marginBottom: '2rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderLeft: `4px solid ${getWorkoutColor(w)}`, paddingLeft: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderLeft: `6px solid ${getWorkoutColor(w)}`, paddingLeft: '1rem' }}>
                                 <h3 style={{ margin: 0 }}>{w.name}</h3>
                                 <button className="btn" onClick={() => handleShare(w)} style={{ padding: '0.5rem', color: 'var(--primary)' }}>
                                     <Share2 size={20} />
@@ -280,19 +281,19 @@ export default function Calendar() {
                             </div>
                             <div style={{ display: 'grid', gap: '1rem' }}>
                                 {w.exercises.map(ex => {
-                                    // Use stored record ID for O(1) matching
                                     const prRecord = personalRecords[ex.name];
 
                                     return (
                                         <div key={ex.id} className="card" style={{ padding: '1rem' }}>
-                                            <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>{ex.name}</div>
+                                            <div style={{ fontWeight: 'bold', marginBottom: '0.8rem', color: 'var(--text-secondary)' }}>{ex.name}</div>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                                 {ex.target === 'Cardio' ? (
                                                     <span style={{
-                                                        background: 'rgba(34, 197, 94, 0.2)',
+                                                        background: 'var(--bg-app)',
+                                                        boxShadow: 'var(--shadow-concave)',
                                                         color: '#22c55e',
-                                                        padding: '0.25rem 0.5rem',
-                                                        borderRadius: '4px',
+                                                        padding: '0.5rem 0.75rem',
+                                                        borderRadius: '8px',
                                                         fontSize: '0.9rem'
                                                     }}>
                                                         {((ex.accumulatedSeconds || 0) / 60).toFixed(1)} mins
@@ -303,17 +304,19 @@ export default function Calendar() {
 
                                                         return s.completed && (
                                                             <span key={i} style={{
-                                                                background: 'rgba(255,255,255,0.1)',
-                                                                padding: '0.25rem 0.5rem',
-                                                                borderRadius: '4px',
-                                                                fontSize: '0.8rem',
+                                                                background: 'var(--bg-app)',
+                                                                boxShadow: isPR ? '0 0 10px rgba(234, 179, 8, 0.3), var(--shadow-convex)' : 'var(--shadow-concave)',
+                                                                padding: '0.5rem 0.75rem',
+                                                                borderRadius: '8px',
+                                                                fontSize: '0.9rem',
                                                                 display: 'flex',
                                                                 alignItems: 'center',
-                                                                gap: '4px',
-                                                                border: isPR ? '1px solid #eab308' : 'none'
+                                                                gap: '6px',
+                                                                color: isPR ? '#eab308' : 'var(--text-primary)',
+                                                                border: isPR ? '1px solid rgba(234, 179, 8, 0.2)' : 'none'
                                                             }}>
                                                                 {s.weight}kg x {s.reps}
-                                                                {isPR && <Trophy size={10} color="#eab308" />}
+                                                                {isPR && <Trophy size={12} color="#eab308" />}
                                                             </span>
                                                         );
                                                     })
