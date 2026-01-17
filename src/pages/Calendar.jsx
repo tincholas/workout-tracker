@@ -221,9 +221,6 @@ export default function Calendar() {
     return (
         <div
             style={{ padding: 'var(--space-md)' }}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
                 <h2 style={{ margin: 0 }}>{MONTHS[month]} {year}</h2>

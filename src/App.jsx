@@ -10,6 +10,8 @@ import { useWorkout } from './store/WorkoutContext';
 
 import { AnimatePresence } from 'framer-motion';
 import PageTransition from './components/PageTransition';
+import GestureLayout from './components/GestureLayout';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   const location = useLocation();
@@ -17,15 +19,45 @@ function App() {
 
   return (
     <div className="app-container">
+      <ScrollToTop />
       <main style={{ flex: 1, paddingBottom: '80px' }}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+            <Route path="/" element={
+              <PageTransition>
+                <GestureLayout
+                  leftPage={<Calendar />}
+                  leftPath="/calendar"
+                  rightPage={<ExerciseHistory />}
+                  rightPath="/history"
+                >
+                  <Home />
+                </GestureLayout>
+              </PageTransition>
+            } />
             <Route path="/session" element={<PageTransition><WorkoutSession /></PageTransition>} />
-            <Route path="/history" element={<PageTransition><ExerciseHistory /></PageTransition>} />
+            <Route path="/history" element={
+              <PageTransition>
+                <GestureLayout
+                  leftPage={<Home />}
+                  leftPath="/"
+                >
+                  <ExerciseHistory />
+                </GestureLayout>
+              </PageTransition>
+            } />
             <Route path="/completed" element={<PageTransition><WorkoutComplete /></PageTransition>} />
             <Route path="/analytics" element={<PageTransition><ExerciseAnalytics /></PageTransition>} />
-            <Route path="/calendar" element={<PageTransition><Calendar /></PageTransition>} />
+            <Route path="/calendar" element={
+              <PageTransition>
+                <GestureLayout
+                  rightPage={<Home />}
+                  rightPath="/"
+                >
+                  <Calendar />
+                </GestureLayout>
+              </PageTransition>
+            } />
           </Routes>
         </AnimatePresence>
       </main>
