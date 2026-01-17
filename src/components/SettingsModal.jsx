@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useWorkout } from '../store/WorkoutContext';
 import { X, Download, Upload, Trash2, RefreshCw } from 'lucide-react';
 import { getAllData, importData, clearData } from '../store/db';
+import { motion } from 'framer-motion';
 
 export default function SettingsModal({ onClose }) {
     const { preferredUnit, toggleUnit, restTimer, setRestTimer } = useWorkout();
@@ -71,20 +72,33 @@ export default function SettingsModal({ onClose }) {
     };
 
     return (
-        <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-        }}>
-            <div className="card" style={{
-                width: '100%',
-                maxWidth: '400px',
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1.5rem',
-                maxHeight: '90vh',
-                overflowY: 'auto'
-            }}>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+            }}
+        >
+            <motion.div
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "100%", opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="card"
+                style={{
+                    width: '100%',
+                    maxWidth: '400px',
+                    padding: '1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.5rem',
+                    maxHeight: '90vh',
+                    overflowY: 'auto'
+                }}
+            >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0 }}>Settings</h2>
                     <button onClick={onClose} className="btn" style={{ padding: '0.5rem' }}><X size={24} /></button>
@@ -169,7 +183,7 @@ export default function SettingsModal({ onClose }) {
                     <p style={{ margin: 0 }}>Updated: {__BUILD_DATE__}</p>
                     <p style={{ margin: '0.5rem 0 0 0', color: '#fff' }}>&copy; Martin Nanni {new Date().getFullYear()}</p>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }

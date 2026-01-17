@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { EXERCISE_TYPES, WORKOUT_TEMPLATES, EXERCISE_DATABASE, MUSCLE_GROUPS } from '../store/models';
 import { useWorkout } from '../store/WorkoutContext';
 import { X, Search } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function ExercisePickerModal({ onClose, onSelect }) {
     const { history } = useWorkout();
@@ -67,10 +68,16 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
     }, [groupedExercises, searchTerm]);
 
     return (
-        <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200,
-            display: 'flex', flexDirection: 'column', padding: '1rem'
-        }}>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 200,
+                display: 'flex', flexDirection: 'column', padding: '1rem'
+            }}
+        >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ margin: 0 }}>Select Exercise</h2>
                 <button className="btn" style={{ padding: '0.5rem' }} onClick={onClose}><X size={24} /></button>
@@ -88,7 +95,13 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                 />
             </div>
 
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', alignContent: 'start' }}>
+            <motion.div
+                initial={{ y: "20%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "20%", opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', alignContent: 'start' }}
+            >
                 {Object.keys(filteredGroups).sort().map(group => (
                     filteredGroups[group].length > 0 && (
                         <div key={group}>
@@ -134,7 +147,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                         </div>
                     </div>
                 )}
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }

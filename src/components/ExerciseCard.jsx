@@ -4,8 +4,9 @@ import CardioTimer from './CardioTimer';
 import RestTimer from './RestTimer';
 import { useWorkout } from '../store/WorkoutContext';
 import { RefreshCw, Plus, Minus, Trash2, MoreVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function ExerciseCard({ exercise, onSwap }) {
+export default function ExerciseCard({ exercise, onSwap, ...props }) {
     const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise } = useWorkout();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
@@ -58,17 +59,33 @@ export default function ExerciseCard({ exercise, onSwap }) {
     }, [exercise.sets, exercise.name, personalRecords]);
 
     return (
-        <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <motion.div
+            layout
+            initial={props.variants ? undefined : { opacity: 0, y: 20 }}
+            animate={props.variants ? undefined : { opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="card"
+            style={{ padding: '1rem', marginBottom: '1rem', overflow: 'hidden' }}
+            {...props}
+        >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{exercise.name}</h3>
-                    {isResting && (
-                        <RestTimer
-                            endTime={activeRestTimer.endTime}
-                            totalDuration={activeRestTimer.totalDuration}
-                            onComplete={cancelRestTimer}
-                        />
-                    )}
+                    <AnimatePresence>
+                        {isResting && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                            >
+                                <RestTimer
+                                    endTime={activeRestTimer.endTime}
+                                    totalDuration={activeRestTimer.totalDuration}
+                                    onComplete={cancelRestTimer}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 <div style={{ position: 'relative' }} ref={menuRef}>
@@ -80,45 +97,52 @@ export default function ExerciseCard({ exercise, onSwap }) {
                         <MoreVertical size={20} />
                     </button>
 
-                    {showMenu && (
-                        <div style={{
-                            position: 'absolute',
-                            right: 0,
-                            top: '100%',
-                            background: '#1a1a1a',
-                            border: '1px solid #333',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                            zIndex: 10,
-                            minWidth: '160px',
-                            overflow: 'hidden'
-                        }}>
-                            <button
-                                onClick={() => { reorderExercise(exercise.id, 'UP'); setShowMenu(false); }}
-                                style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                    <AnimatePresence>
+                        {showMenu && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, originTR: 1 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: '100%',
+                                    background: '#1a1a1a',
+                                    border: '1px solid #333',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                    zIndex: 10,
+                                    minWidth: '160px',
+                                    overflow: 'hidden'
+                                }}
                             >
-                                <ArrowUp size={16} /> Move Up
-                            </button>
-                            <button
-                                onClick={() => { reorderExercise(exercise.id, 'DOWN'); setShowMenu(false); }}
-                                style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
-                            >
-                                <ArrowDown size={16} /> Move Down
-                            </button>
-                            <button
-                                onClick={() => { onSwap(exercise.id); setShowMenu(false); }}
-                                style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
-                            >
-                                <RefreshCw size={16} /> Replace
-                            </button>
-                            <button
-                                onClick={() => { removeExercise(exercise.id); setShowMenu(false); }}
-                                style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#ef4444', textAlign: 'left', cursor: 'pointer' }}
-                            >
-                                <Trash2 size={16} /> Remove
-                            </button>
-                        </div>
-                    )}
+                                <button
+                                    onClick={() => { reorderExercise(exercise.id, 'UP'); setShowMenu(false); }}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                                >
+                                    <ArrowUp size={16} /> Move Up
+                                </button>
+                                <button
+                                    onClick={() => { reorderExercise(exercise.id, 'DOWN'); setShowMenu(false); }}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                                >
+                                    <ArrowDown size={16} /> Move Down
+                                </button>
+                                <button
+                                    onClick={() => { onSwap(exercise.id); setShowMenu(false); }}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                                >
+                                    <RefreshCw size={16} /> Replace
+                                </button>
+                                <button
+                                    onClick={() => { removeExercise(exercise.id); setShowMenu(false); }}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#ef4444', textAlign: 'left', cursor: 'pointer' }}
+                                >
+                                    <Trash2 size={16} /> Remove
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 
@@ -139,16 +163,25 @@ export default function ExerciseCard({ exercise, onSwap }) {
                     </div>
 
                     <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
-                        {exercise.sets.map((set, index) => (
-                            <SetRow
-                                key={set.id}
-                                set={set}
-                                index={index}
-                                onUpdate={(updates) => handleSetUpdate(set.id, updates)}
-                                exerciseName={exercise.name}
-                                isPR={set.id === activePRSetId}
-                            />
-                        ))}
+                        <AnimatePresence initial={false}>
+                            {exercise.sets.map((set, index) => (
+                                <motion.div
+                                    key={set.id}
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                    transition={{ opacity: { duration: 0.2 }, height: { duration: 0.3 } }}
+                                >
+                                    <SetRow
+                                        set={set}
+                                        index={index}
+                                        onUpdate={(updates) => handleSetUpdate(set.id, updates)}
+                                        exerciseName={exercise.name}
+                                        isPR={set.id === activePRSetId}
+                                    />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
@@ -170,6 +203,6 @@ export default function ExerciseCard({ exercise, onSwap }) {
                     </div>
                 </>
             )}
-        </div>
+        </motion.div>
     );
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { EXERCISE_TYPES, SPLIT_COLORS } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
@@ -59,6 +60,7 @@ export default function Home() {
     const [newWorkoutName, setNewWorkoutName] = useState('');
     const [selectedColor, setSelectedColor] = useState(COLORS[4]);
     const [selectedIcon, setSelectedIcon] = useState('Star');
+    const [isStarting, setIsStarting] = useState(false); // Prevents flicker during transition
 
     // Find last workout name
     const lastWorkoutName = React.useMemo(() => {
@@ -69,6 +71,7 @@ export default function Home() {
     }, [history]);
 
     const handleStart = (type, customName = null) => {
+        setIsStarting(true); // Suppress "Active Workout Found" during exit
         startWorkout(type, customName);
         navigate('/session');
     };
@@ -106,7 +109,7 @@ export default function Home() {
                 <p style={{ color: 'var(--text-muted)' }}>Select your split to begin</p>
             </header>
 
-            {activeWorkout && (
+            {activeWorkout && !isStarting && (
                 <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', border: '1px solid var(--primary)' }}>
                     <h3 style={{ margin: '0 0 1rem 0' }}>Active Workout Found</h3>
                     <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate('/session')}>
@@ -336,7 +339,9 @@ export default function Home() {
                 </div>
             )}
             {/* Settings Modal */}
-            {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+            <AnimatePresence>
+                {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+            </AnimatePresence>
         </div>
     );
 }

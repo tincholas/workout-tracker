@@ -1,11 +1,15 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import WorkoutSession from './pages/WorkoutSession';
+import WorkoutComplete from './pages/WorkoutComplete';
 import ExerciseHistory from './pages/ExerciseHistory';
 import ExerciseAnalytics from './pages/ExerciseAnalytics';
 import Calendar from './pages/Calendar';
 import { Dumbbell, Calendar as CalendarIcon, LineChart } from 'lucide-react';
 import { useWorkout } from './store/WorkoutContext';
+
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from './components/PageTransition';
 
 function App() {
   const location = useLocation();
@@ -14,13 +18,16 @@ function App() {
   return (
     <div className="app-container">
       <main style={{ flex: 1, paddingBottom: '80px' }}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/session" element={<WorkoutSession />} />
-          <Route path="/history" element={<ExerciseHistory />} />
-          <Route path="/analytics" element={<ExerciseAnalytics />} />
-          <Route path="/calendar" element={<Calendar />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+            <Route path="/session" element={<PageTransition><WorkoutSession /></PageTransition>} />
+            <Route path="/history" element={<PageTransition><ExerciseHistory /></PageTransition>} />
+            <Route path="/completed" element={<PageTransition><WorkoutComplete /></PageTransition>} />
+            <Route path="/analytics" element={<PageTransition><ExerciseAnalytics /></PageTransition>} />
+            <Route path="/calendar" element={<PageTransition><Calendar /></PageTransition>} />
+          </Routes>
+        </AnimatePresence>
       </main>
 
       {/* Bottom Navigation */}

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useWorkout } from '../store/WorkoutContext';
 import { Check, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
     const { preferredUnit } = useWorkout();
@@ -141,8 +142,10 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
             </div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>
-                <input
+                <motion.input
                     type="number"
+                    whileFocus={{ scale: 1.05, borderColor: 'var(--color-primary)' }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     inputMode="decimal"
                     className="input"
                     style={{
@@ -161,8 +164,10 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
             </div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>
-                <input
+                <motion.input
                     type="number"
+                    whileFocus={{ scale: 1.05, borderColor: 'var(--color-primary)' }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     inputMode="decimal"
                     className="input"
                     style={{
@@ -180,11 +185,17 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
                 <span style={{ position: 'absolute', right: 8, top: 10, fontSize: '0.7em', color: 'var(--text-muted)' }}>REPS</span>
             </div>
 
-            <button
+            <motion.button
+                layout
+                whileTap={{ scale: 0.8 }}
+                animate={{
+                    scale: set.completed ? [1, 1.2, 1] : 1,
+                    backgroundColor: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'rgba(255,255,255,0.1)'
+                }}
+                transition={{ duration: 0.2 }}
                 className="btn"
                 style={{
                     padding: '0.5rem',
-                    backgroundColor: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'rgba(255,255,255,0.1)',
                     color: set.completed ? '#000' : 'var(--text-primary)',
                     border: 'none',
                     width: '36px',
@@ -194,7 +205,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
                 onClick={handleToggleComplete}
             >
                 <Check size={18} />
-            </button>
+            </motion.button>
         </div>
     );
 }
