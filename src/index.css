@@ -22,6 +22,7 @@
 
   /* Accents */
   --color-primary: #3b82f6;
+  --primary: var(--color-primary);
   --color-primary-glow: rgba(59, 130, 246, 0.4);
   --color-success: #10b981;
   --color-danger: #ef4444;

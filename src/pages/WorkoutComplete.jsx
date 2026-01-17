@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import confetti from 'canvas-confetti';
-import { Trophy, Calendar, Zap, Home } from 'lucide-react';
+import { Trophy, Calendar, CheckCircle, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function WorkoutComplete() {
@@ -131,7 +131,7 @@ export default function WorkoutComplete() {
                     className="card"
                     style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                 >
-                    <Zap size={32} color="var(--primary)" style={{ marginBottom: '0.5rem' }} />
+                    <CheckCircle size={32} color="var(--color-primary)" style={{ marginBottom: '0.5rem' }} />
                     <span style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.streak}</span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Day Streak</span>
                 </motion.div>
