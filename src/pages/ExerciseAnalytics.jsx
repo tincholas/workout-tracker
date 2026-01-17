@@ -207,42 +207,44 @@ export default function ExerciseAnalytics() {
             </button>
 
             {!targetGroup && (
-                isEditing ? (
-                    <form onSubmit={handleRename} style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '300px' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Name</label>
-                        <input
-                            className="input"
-                            autoFocus
-                            value={editName}
-                            onChange={e => setEditName(e.target.value)}
-                        />
+                <div>
+                    {isEditing ? (
+                        <form onSubmit={handleRename} style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '300px' }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Name</label>
+                            <input
+                                className="input"
+                                autoFocus
+                                value={editName}
+                                onChange={e => setEditName(e.target.value)}
+                            />
 
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Muscle Group</label>
-                        <select
-                            className="input"
-                            style={{ padding: '0.8rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
-                            value={editTarget}
-                            onChange={e => setEditTarget(e.target.value)}
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Muscle Group</label>
+                            <select
+                                className="input"
+                                style={{ padding: '0.8rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
+                                value={editTarget}
+                                onChange={e => setEditTarget(e.target.value)}
+                            >
+                                <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>Select (Optional)</option>
+                                {MUSCLE_GROUPS.map(g => (
+                                    <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
+                                ))}
+                            </select>
+
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                <button type="submit" className="btn btn-primary">Save</button>
+                                <button type="button" className="btn" onClick={() => setIsEditing(false)}>Cancel</button>
+                            </div>
+                        </form>
+                    ) : (
+                        <h1
+                            style={{ marginBottom: 'var(--space-lg)', cursor: 'text', borderBottom: '1px dashed #333', display: 'inline-block' }}
+                            onClick={() => { setEditName(exerciseName); setIsEditing(true); }}
                         >
-                            <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>Select (Optional)</option>
-                            {MUSCLE_GROUPS.map(g => (
-                                <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
-                            ))}
-                        </select>
-
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                            <button type="submit" className="btn btn-primary">Save</button>
-                            <button type="button" className="btn" onClick={() => setIsEditing(false)}>Cancel</button>
-                        </div>
-                    </form>
-                ) : (
-                    <h1
-                        style={{ marginBottom: 'var(--space-lg)', cursor: 'text', borderBottom: '1px dashed #333', display: 'inline-block' }}
-                        onClick={() => { setEditName(exerciseName); setIsEditing(true); }}
-                    >
-                        {exerciseName} <span style={{ fontSize: '0.4em', color: 'var(--text-muted)', verticalAlign: 'middle' }}>(Edit)</span>
-                    </h1>
-                )
+                            {exerciseName} <span style={{ fontSize: '0.4em', color: 'var(--text-muted)', verticalAlign: 'middle' }}>(Edit)</span>
+                        </h1>
+                    )}
+                </div>
             )}
 
             {targetGroup && (
