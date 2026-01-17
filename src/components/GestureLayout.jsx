@@ -47,9 +47,9 @@ export default function GestureLayout({ children, leftPage, leftPath, rightPage,
     // We can use `onDrag` callback to set state if not set?
     const handleDrag = (event, info) => {
         if (!activeNeighbor) {
-            if (info.offset.x > 10 && leftPage) {
+            if (info.offset.x > 5 && leftPage) {
                 setActiveNeighbor('left');
-            } else if (info.offset.x < -10 && rightPage) {
+            } else if (info.offset.x < -5 && rightPage) {
                 setActiveNeighbor('right');
             }
         }
@@ -107,6 +107,7 @@ export default function GestureLayout({ children, leftPage, leftPath, rightPage,
             {/* Foreground Layer (The Active Screen) */}
             <motion.div
                 drag={disableDrag ? false : "x"}
+                dragDirectionLock={true}
                 dragConstraints={{
                     left: rightPage ? -window.innerWidth : 0,
                     right: leftPage ? window.innerWidth : 0
@@ -122,7 +123,8 @@ export default function GestureLayout({ children, leftPage, leftPath, rightPage,
                     position: 'relative',
                     zIndex: 10,
                     background: 'var(--bg-app)',
-                    boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+                    boxShadow: '0 0 20px rgba(0,0,0,0.5)',
+                    touchAction: 'pan-y'
                 }}
             >
                 {children}

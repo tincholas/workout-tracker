@@ -130,10 +130,13 @@ export default function Home() {
                     const Icon = ICON_MAP[iconName] || Dumbbell;
                     const isLast = lastWorkoutName === type;
                     return (
-                        <button
+                        <div
                             key={type}
                             className="card"
+                            role="button"
+                            tabIndex={0}
                             onClick={() => handleStart(type)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleStart(type); } }}
                             style={{
                                 padding: '1.5rem',
                                 borderLeft: `6px solid ${SPLIT_COLORS[type]}`,
@@ -146,8 +149,11 @@ export default function Home() {
                                 textAlign: 'left',
                                 cursor: 'pointer',
                                 transition: 'transform 0.2s',
-                                color: 'var(--text-primary)', // Ensure readability in boith modes
-                                position: 'relative'
+                                color: 'var(--text-primary)',
+                                position: 'relative',
+                                boxSizing: 'border-box',
+                                userSelect: 'none',
+                                touchAction: 'pan-y'
                             }}
                         >
                             <div style={{
@@ -169,7 +175,7 @@ export default function Home() {
                                     <span>Last</span>
                                 </div>
                             )}
-                        </button>
+                        </div>
                     );
                 })}
 
@@ -179,9 +185,12 @@ export default function Home() {
                     const IconComponent = ICON_MAP[custom.icon] || Star;
                     return (
                         <div key={custom.id} style={{ position: 'relative' }}>
-                            <button
+                            <div
                                 className="card"
+                                role="button"
+                                tabIndex={0}
                                 onClick={() => handleStart(EXERCISE_TYPES.CUSTOM, custom.name)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleStart(EXERCISE_TYPES.CUSTOM, custom.name); } }}
                                 style={{
                                     padding: '1.5rem',
                                     borderLeft: `6px solid ${custom.color}`,
@@ -193,7 +202,10 @@ export default function Home() {
                                     width: '100%',
                                     textAlign: 'left',
                                     cursor: 'pointer',
-                                    color: 'var(--text-primary)' // Ensure readability in both modes
+                                    color: 'var(--text-primary)',
+                                    boxSizing: 'border-box',
+                                    userSelect: 'none',
+                                    touchAction: 'pan-y'
                                 }}
                             >
                                 <div style={{
@@ -216,7 +228,7 @@ export default function Home() {
                                         <span>Last</span>
                                     </div>
                                 )}
-                            </button>
+                            </div>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -243,9 +255,12 @@ export default function Home() {
                 })}
 
                 {/* Create New Button */}
-                <button
+                <div
                     className="card"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setShowModal(true)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowModal(true); } }}
                     style={{
                         padding: '1.5rem',
                         border: '2px dashed var(--text-muted)',
@@ -255,12 +270,14 @@ export default function Home() {
                         justifyContent: 'center',
                         gap: '0.5rem',
                         color: 'var(--text-muted)',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        touchAction: 'pan-y'
                     }}
                 >
                     <Plus size={24} />
                     <span>Create Custom Workout</span>
-                </button>
+                </div>
             </div>
 
             {/* Creation Modal */}
@@ -272,7 +289,7 @@ export default function Home() {
                     <div className="card" style={{ width: '90%', maxWidth: '400px', padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                             <h2 style={{ margin: 0 }}>New Workout</h2>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: '#fff' }}><X /></button>
+                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)' }}><X /></button>
                         </div>
 
                         <form onSubmit={handleCreate}>
