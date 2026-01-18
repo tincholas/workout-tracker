@@ -15,10 +15,18 @@ export const WorkoutProvider = ({ children }) => {
     const [restTimer, setRestTimer] = useState({ enabled: false, seconds: 60 });
     const [activeRestTimer, setActiveRestTimer] = useState(null); // { exerciseId, endTime, totalDuration }
     const [isInitialized, setIsInitialized] = useState(false);
+    const [notificationPermission, setNotificationPermission] = useState('default');
 
     // ... imports etc ...
 
+    useEffect(() => {
+        if ("Notification" in window) {
+            setNotificationPermission(Notification.permission);
+        }
+    }, []);
+
     const startRestTimer = (exerciseId, durationSeconds) => {
+        requestNotificationPermission();
         const now = Date.now();
         setActiveRestTimer({
             exerciseId,
@@ -114,6 +122,37 @@ export const WorkoutProvider = ({ children }) => {
         setData('workout_rest_timer', restTimer);
     }, [history, activeWorkout, extraTypes, preferredUnit, restTimer, isInitialized]);
 
+    // Timer Notification Logic
+    useEffect(() => {
+        let interval = null;
+        if (activeRestTimer) {
+            interval = setInterval(() => {
+                const now = Date.now();
+                if (now >= activeRestTimer.endTime) {
+                    // Send Notification
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        // Try Service Worker first
+                        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification("Cool Down Finished", {
+                                    body: "Time for your next set!",
+                                    icon: '/bicep.svg',
+                                    vibrate: [200, 100, 200]
+                                });
+                            }).catch(() => new Notification("Cool Down Finished", { body: "Time for your next set!", icon: '/bicep.svg' }));
+                        } else {
+                            new Notification("Cool Down Finished", { body: "Time for your next set!", icon: '/bicep.svg' });
+                        }
+                    }
+                    setActiveRestTimer(null);
+                }
+            }, 1000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [activeRestTimer]);
+
     if (!isInitialized) {
         // Return a loading state or null
         // Since we want to key-off 'isInitialized' to avoid flashing empty data
@@ -130,6 +169,14 @@ export const WorkoutProvider = ({ children }) => {
     // Actions
     const toggleUnit = () => {
         setPreferredUnit(prev => prev === 'KG' ? 'LBS' : 'KG');
+    };
+
+    const requestNotificationPermission = () => {
+        if (!("Notification" in window)) return;
+
+        Notification.requestPermission().then((permission) => {
+            setNotificationPermission(permission);
+        });
     };
 
     const createCustomType = (name, color, icon) => {
@@ -455,7 +502,9 @@ export const WorkoutProvider = ({ children }) => {
             startRestTimer,
             cancelRestTimer,
             extendRestTimer,
-            personalRecords
+            personalRecords,
+            notificationPermission,
+            requestNotificationPermission
         }}>
             {children}
         </WorkoutContext.Provider>

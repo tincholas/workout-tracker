@@ -5,7 +5,7 @@ import { getAllData, importData, clearData } from '../store/db';
 import { motion } from 'framer-motion';
 
 export default function SettingsModal({ onClose }) {
-    const { preferredUnit, toggleUnit, restTimer, setRestTimer } = useWorkout();
+    const { preferredUnit, toggleUnit, restTimer, setRestTimer, notificationPermission, requestNotificationPermission } = useWorkout();
     const fileInputRef = useRef(null);
 
     const handleExport = async () => {
@@ -174,6 +174,24 @@ export default function SettingsModal({ onClose }) {
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                             Auto-start timer when checking off a set.
                         </p>
+
+                        {notificationPermission !== 'granted' && "Notification" in window && (
+                            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+                                <button
+                                    onClick={requestNotificationPermission}
+                                    className="btn btn-sm"
+                                    style={{
+                                        width: '100%',
+                                        justifyContent: 'center',
+                                        background: 'rgba(59, 130, 246, 0.1)',
+                                        color: '#3b82f6',
+                                        border: '1px solid rgba(59, 130, 246, 0.3)'
+                                    }}
+                                >
+                                    Enable Notifications
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -81,7 +81,6 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                                 <RestTimer
                                     endTime={activeRestTimer.endTime}
                                     totalDuration={activeRestTimer.totalDuration}
-                                    onComplete={cancelRestTimer}
                                 />
                             </motion.div>
                         )}
