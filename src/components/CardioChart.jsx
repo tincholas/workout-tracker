@@ -4,7 +4,7 @@ import { Bar } from 'react-chartjs-2';
 
 import { useThemeColors } from '../hooks/useThemeColors';
 
-export default function CardioChart({ history, currentMonth, currentYear }) {
+export default function CardioChart({ history, currentMonth, currentYear, disableAnimation }) {
     const { textMuted, borderSubtle } = useThemeColors();
     const chartData = useMemo(() => {
         if (!history) return null;
@@ -55,6 +55,9 @@ export default function CardioChart({ history, currentMonth, currentYear }) {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+            duration: disableAnimation ? 0 : 1000
+        },
         plugins: {
             legend: { position: 'bottom', labels: { color: textMuted, boxWidth: 12 } },
             title: { display: false },

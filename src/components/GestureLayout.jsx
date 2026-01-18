@@ -87,24 +87,7 @@ export default function GestureLayout({ children, leftPage, leftPath, rightPage,
                 background: 'var(--bg-app)' // Ensure base is colored
             }}
         >
-            {/* Background Layer (The Revealed Screen) */}
-            <div
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 0, // Behind the foreground
-                    overflowY: 'auto', // Allow internal scrolling if needed (though interaction blocked by foreground)
-                    paddingBottom: '80px' // Match main padding to prevent cutoff behind nav
-                }}
-            >
-                {activeNeighbor === 'left' && leftPage}
-                {activeNeighbor === 'right' && rightPage}
-            </div>
-
-            {/* Foreground Layer (The Active Screen) */}
+            {/* Draggable Container - Slides all screens together */}
             <motion.div
                 drag={disableDrag ? false : "x"}
                 dragDirectionLock={true}
@@ -120,14 +103,54 @@ export default function GestureLayout({ children, leftPage, leftPath, rightPage,
                     x,
                     width: '100%',
                     height: '100%',
-                    position: 'relative',
+                    position: 'relative', // Context for absolute neighbors
                     zIndex: 10,
                     background: 'var(--bg-app)',
                     boxShadow: '0 0 20px rgba(0,0,0,0.5)',
-                    touchAction: 'pan-y'
+                    touchAction: 'pan-y',
+                    willChange: 'transform' // Performance check
                 }}
             >
-                {children}
+                {/* Left Neighbor (Calendar) */}
+                {activeNeighbor === 'left' && leftPage && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: window.scrollY,
+                            left: '-100%',
+                            width: '100%',
+                            height: window.innerHeight,
+                            overflowY: 'auto',
+                            paddingBottom: '80px',
+                            background: 'var(--bg-app)'
+                        }}
+                    >
+                        {leftPage}
+                    </div>
+                )}
+
+                {/* Current Page */}
+                <div style={{ width: '100%', height: '100%' }}>
+                    {children}
+                </div>
+
+                {/* Right Neighbor (History) */}
+                {activeNeighbor === 'right' && rightPage && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: window.scrollY,
+                            left: '100%',
+                            width: '100%',
+                            height: window.innerHeight,
+                            overflowY: 'auto',
+                            paddingBottom: '80px',
+                            background: 'var(--bg-app)'
+                        }}
+                    >
+                        {rightPage}
+                    </div>
+                )}
             </motion.div>
         </div>
     );

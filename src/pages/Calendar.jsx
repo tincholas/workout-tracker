@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import { SPLIT_COLORS } from '../store/models';
 import VolumeChart from '../components/VolumeChart';
 import CardioChart from '../components/CardioChart';
+import { shareWorkout } from '../utils/shareWorkout';
 import { ChevronLeft, ChevronRight, X, Share2, Trophy } from 'lucide-react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -10,6 +12,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 
 export default function Calendar() {
     const { history, preferredUnit, extraTypes, personalRecords } = useWorkout();
+    const location = useLocation();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
 
@@ -64,53 +67,8 @@ export default function Calendar() {
         }
     };
 
-    const handleShare = async (workout) => {
-        const date = new Date(workout.endTime).toLocaleDateString();
-        let text = `🏋️ ${workout.name} (${date})\n\n`;
-
-        workout.exercises.forEach(ex => {
-            text += `🔹 ${ex.name}`;
-
-            if (ex.target === 'Cardio') {
-                const mins = ((ex.accumulatedSeconds || 0) / 60).toFixed(1);
-                text += `: ${mins} mins\n`;
-            } else {
-                text += `\n`;
-                const completedSets = ex.sets.filter(s => s.completed);
-
-                // Find Share PR (Max Vol Set)
-                const prRecord = personalRecords[ex.name]; // { volume, setId }
-
-                if (completedSets.length > 0) {
-                    completedSets.forEach((s, i) => {
-                        const isPR = prRecord && prRecord.setId === s.id;
-                        text += `   • ${s.weight}kg x ${s.reps}${isPR ? ' 🏆' : ''}\n`;
-                    });
-                } else {
-                    text += `   (No completed sets)\n`;
-                }
-            }
-            text += `\n`;
-        });
-
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: `${workout.name} Workout`,
-                    text: text,
-                });
-            } catch (err) {
-                console.log('Error sharing:', err);
-            }
-        } else {
-            // Fallback
-            try {
-                await navigator.clipboard.writeText(text);
-                alert('Workout summary copied to clipboard!');
-            } catch (err) {
-                console.error('Failed to copy', err);
-            }
-        }
+    const handleShare = (workout) => {
+        shareWorkout(workout, personalRecords);
     };
 
     const renderCalendar = () => {
@@ -250,14 +208,14 @@ export default function Calendar() {
             {hasSetsData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
                     <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>Daily Volume ({preferredUnit})</h3>
-                    <VolumeChart history={history} currentMonth={month} currentYear={year} />
+                    <VolumeChart history={history} currentMonth={month} currentYear={year} disableAnimation={location.state?.fromSwipe} />
                 </div>
             )}
 
             {hasCardioData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
                     <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>Daily Cardio (Minutes)</h3>
-                    <CardioChart history={history} currentMonth={month} currentYear={year} />
+                    <CardioChart history={history} currentMonth={month} currentYear={year} disableAnimation={location.state?.fromSwipe} />
                 </div>
             )}
 

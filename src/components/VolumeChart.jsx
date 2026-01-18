@@ -5,7 +5,7 @@ import { TARGET_COLORS } from '../store/models';
 
 import { useThemeColors } from '../hooks/useThemeColors';
 
-export default function VolumeChart({ history, currentMonth, currentYear }) {
+export default function VolumeChart({ history, currentMonth, currentYear, disableAnimation }) {
     const { textMuted, borderSubtle } = useThemeColors();
     const chartData = useMemo(() => {
         if (!history) return null;
@@ -60,7 +60,6 @@ export default function VolumeChart({ history, currentMonth, currentYear }) {
             label: target,
             data: targetDataMap[target],
             backgroundColor: getColor(target),
-            backgroundColor: getColor(target),
             borderRadius: 4, // Add border radius for consistency with Cardio chart
         }));
 
@@ -73,6 +72,9 @@ export default function VolumeChart({ history, currentMonth, currentYear }) {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+            duration: disableAnimation ? 0 : 1000
+        },
         plugins: {
             legend: { position: 'bottom', labels: { color: textMuted, boxWidth: 12 } },
             title: { display: false },

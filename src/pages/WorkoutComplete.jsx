@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import confetti from 'canvas-confetti';
-import { Trophy, Calendar, CheckCircle, Home } from 'lucide-react';
+import { Trophy, Calendar, CheckCircle, Home, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { shareWorkout } from '../utils/shareWorkout';
 
 export default function WorkoutComplete() {
     const { history, personalRecords } = useWorkout();
@@ -90,6 +91,7 @@ export default function WorkoutComplete() {
     return (
         <div className="page-container" style={{
             padding: 'var(--space-lg)',
+            paddingBottom: '6rem', // Ensure space above nav bar
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -175,17 +177,34 @@ export default function WorkoutComplete() {
                 </motion.div>
             )}
 
-            <motion.button
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ delay: 1 }}
-                className="btn btn-primary"
-                style={{ width: '100%', maxWidth: '300px', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
-                onClick={() => navigate('/')}
-            >
-                <Home size={20} /> Return Home
-            </motion.button>
+            <div style={{ width: '100%', maxWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <motion.button
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ delay: 0.9 }}
+                    className="btn"
+                    style={{ width: '100%', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-card)', color: 'var(--color-primary)' }}
+                    onClick={() => {
+                        const lastWorkout = history[history.length - 1];
+                        if (lastWorkout) shareWorkout(lastWorkout, personalRecords);
+                    }}
+                >
+                    <Share2 size={20} /> Share Workout
+                </motion.button>
+
+                <motion.button
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ delay: 1 }}
+                    className="btn btn-primary"
+                    style={{ width: '100%', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                    onClick={() => navigate('/')}
+                >
+                    <Home size={20} /> Return Home
+                </motion.button>
+            </div>
         </div>
     );
 }
