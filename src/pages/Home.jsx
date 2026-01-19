@@ -9,6 +9,7 @@ import {
     Brain, Smile, Ghost, Sun, Moon
 } from 'lucide-react';
 import SettingsModal from '../components/SettingsModal';
+import { useTranslation } from 'react-i18next';
 
 // Icon Registry - Mapping names to Components
 const ICON_MAP = {
@@ -61,6 +62,7 @@ export default function Home() {
     const [selectedColor, setSelectedColor] = useState(COLORS[4]);
     const [selectedIcon, setSelectedIcon] = useState('Star');
     const [isStarting, setIsStarting] = useState(false); // Prevents flicker during transition
+    const { t } = useTranslation();
 
     // Find last workout name
     const lastWorkoutName = React.useMemo(() => {
@@ -84,6 +86,16 @@ export default function Home() {
         setNewWorkoutName('');
         setSelectedIcon('Star'); // Reset
     };
+
+    // Resolve Active Workout Name
+    const activeWorkoutName = React.useMemo(() => {
+        if (!activeWorkout) return '';
+        const splitKey = Object.keys(EXERCISE_TYPES).find(key => EXERCISE_TYPES[key] === activeWorkout.type);
+        if (splitKey && splitKey !== 'CUSTOM') {
+            return t(`splits.${splitKey}`);
+        }
+        return activeWorkout.name;
+    }, [activeWorkout, t]);
 
     return (
         <div className="page-container" style={{
@@ -109,23 +121,23 @@ export default function Home() {
                     <Settings size={24} />
                 </button>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1px', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-                    IRON <span style={{ color: 'var(--primary)' }}>TRACK</span>
+                    {t('app_title')}
                 </h1>
-                <p style={{ color: 'var(--text-muted)' }}>Select your split to begin</p>
+                <p style={{ color: 'var(--text-muted)' }}>{t('welcome_message')}</p>
             </header>
 
             {activeWorkout && !isStarting && (
                 <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', border: '1px solid var(--primary)' }}>
-                    <h3 style={{ margin: '0 0 1rem 0' }}>Active Workout Found</h3>
+                    <h3 style={{ margin: '0 0 1rem 0' }}>{t('active_workout_found')}</h3>
                     <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate('/session')}>
-                        Resume {activeWorkout.name}
+                        {t('resume_workout', { name: activeWorkoutName })}
                     </button>
                 </div>
             )}
 
             <div style={{ display: 'grid', gap: '1rem' }}>
                 {/* Standard Splits */}
-                {Object.values(EXERCISE_TYPES).filter(t => t !== 'Custom').map((type) => {
+                {Object.entries(EXERCISE_TYPES).filter(([key]) => key !== 'CUSTOM').map(([key, type]) => {
                     const iconName = SPLIT_ICONS[type] || 'Dumbbell';
                     const Icon = ICON_MAP[iconName] || Dumbbell;
                     const isLast = lastWorkoutName === type;
@@ -164,7 +176,7 @@ export default function Home() {
                             }}>
                                 <Icon size={28} />
                             </div>
-                            <div style={{ flex: 1 }}>{type}</div>
+                            <div style={{ flex: 1 }}>{t(`splits.${key}`)}</div>
                             {isLast && (
                                 <div style={{
                                     display: 'flex', alignItems: 'center', gap: '4px',
@@ -172,7 +184,7 @@ export default function Home() {
                                     background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '12px'
                                 }}>
                                     <History size={12} />
-                                    <span>Last</span>
+                                    <span>{t('last_workout')}</span>
                                 </div>
                             )}
                         </div>
@@ -225,14 +237,14 @@ export default function Home() {
                                         marginRight: '2.5rem' // Avoid delete button
                                     }}>
                                         <History size={12} />
-                                        <span>Last</span>
+                                        <span>{t('last_workout')}</span>
                                     </div>
                                 )}
                             </div>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm(`Are you sure you want to delete the "${custom.name}" split?`)) {
+                                    if (window.confirm(t('confirm_delete_split', { name: custom.name }))) {
                                         deleteCustomType(custom.id);
                                     }
                                 }}
@@ -276,7 +288,7 @@ export default function Home() {
                     }}
                 >
                     <Plus size={24} />
-                    <span>Create Custom Workout</span>
+                    <span>{t('create_custom_workout')}</span>
                 </div>
             </div>
 
@@ -288,13 +300,13 @@ export default function Home() {
                 }}>
                     <div className="card" style={{ width: '90%', maxWidth: '400px', padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                            <h2 style={{ margin: 0 }}>New Workout</h2>
+                            <h2 style={{ margin: 0 }}>{t('new_workout')}</h2>
                             <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)' }}><X /></button>
                         </div>
 
                         <form onSubmit={handleCreate}>
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Name</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>{t('workout_name')}</label>
                                 <input
                                     type="text"
                                     value={newWorkoutName}
@@ -307,7 +319,7 @@ export default function Home() {
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Color</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>{t('color')}</label>
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                     {COLORS.map(c => (
                                         <div
@@ -325,7 +337,7 @@ export default function Home() {
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Icon</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>{t('icon')}</label>
                                 <div style={{
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(5, 1fr)',
@@ -360,7 +372,7 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Create</button>
+                            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>{t('create')}</button>
                         </form>
                     </div>
                 </div>

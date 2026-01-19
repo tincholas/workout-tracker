@@ -59,22 +59,40 @@ export const WorkoutProvider = ({ children }) => {
         sortedHistory.forEach(workout => {
             if (!workout.exercises) return;
             workout.exercises.forEach(ex => {
-                ex.sets.forEach(s => {
-                    if (s.completed && s.weight > 0 && s.reps > 0) {
-                        const vol = s.weight * s.reps;
-                        const existing = records[ex.name] || { volume: 0, setId: null };
+                // Cardio PR Logic (Duration)
+                if (ex.target === 'Cardio' && ex.accumulatedSeconds > 0) {
+                    const duration = ex.accumulatedSeconds;
+                    const existing = records[ex.name] || { volume: 0, setId: null };
 
-                        // Strict strict inequality: Only update if strictly higher.
-                        // This preserves the "First Set" as the record holder in case of ties.
-                        if (vol > existing.volume) {
-                            records[ex.name] = {
-                                volume: vol,
-                                setId: s.id,
-                                date: workout.endTime
-                            };
-                        }
+                    if (duration > existing.volume) {
+                        records[ex.name] = {
+                            volume: duration, // Storing seconds as "volume" for consistency
+                            setId: ex.id, // Use exercise ID as reference
+                            date: workout.endTime,
+                            isCardio: true
+                        };
                     }
-                });
+                }
+                // Strength PR Logic (Max Volume per Set)
+                else if (ex.sets) {
+                    ex.sets.forEach(s => {
+                        if (s.completed && s.weight > 0 && s.reps > 0) {
+                            const vol = s.weight * s.reps;
+                            const existing = records[ex.name] || { volume: 0, setId: null };
+
+                            // Strict strict inequality: Only update if strictly higher.
+                            // This preserves the "First Set" as the record holder in case of ties.
+                            if (vol > existing.volume) {
+                                records[ex.name] = {
+                                    volume: vol,
+                                    setId: s.id,
+                                    date: workout.endTime,
+                                    isCardio: false
+                                };
+                            }
+                        }
+                    });
+                }
             });
         });
         return records;
@@ -99,6 +117,42 @@ export const WorkoutProvider = ({ children }) => {
                 if (savedTypes) setExtraTypes(savedTypes);
                 if (savedUnit) setPreferredUnit(savedUnit);
                 if (savedTimer) setRestTimer(savedTimer);
+
+                // Migration: Deduplicate Exercises
+                if (savedHistory) {
+                    const MIGRATION_MAP = {
+                        'Leg Extensions': 'Leg Extension',
+                        'Preacher Curls': 'Preacher Curl',
+                        'Lat Raise': 'Lateral Raises',
+                        'Pulldown': 'Lat Pulldown',
+                        'Seated Row': 'Seated Cable Row',
+                        'Shoulder Press': 'Overhead Press (OHP)',
+                        'Butterfly': 'Chest Fly (Machine/Dumbbell)',
+                        'Reverse Flies': 'Reverse Pec Deck / Rear Delt Fly',
+                        'cable Tricep Extension': 'Tricep Pushdown (Cable)', // casing might vary
+                        'Cable Tricep Extension': 'Tricep Pushdown (Cable)',
+                        'Pulley Bicep Curl Dropset': 'Cable Bicep Curl',
+                        'Kickbacks': 'Glute Kickback'
+                    };
+
+                    let hasChanges = false;
+                    const migratedHistory = savedHistory.map(w => {
+                        if (!w.exercises) return w;
+                        const newExercises = w.exercises.map(ex => {
+                            if (MIGRATION_MAP[ex.name]) {
+                                hasChanges = true;
+                                return { ...ex, name: MIGRATION_MAP[ex.name] };
+                            }
+                            return ex;
+                        });
+                        return { ...w, exercises: newExercises };
+                    });
+
+                    if (hasChanges) {
+                        setHistory(migratedHistory);
+                        console.log("Migrated Exercise Names in History");
+                    }
+                }
             } catch (err) {
                 console.error("Failed to load data from DB:", err);
             } finally {

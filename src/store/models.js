@@ -70,6 +70,7 @@ export const EXERCISE_DATABASE = [
     // Chest
     { name: 'Barbell Bench Press', target: 'Chest' },
     { name: 'Incline Dumbbell Press', target: 'Chest' },
+    { name: 'Incline Barbell Press', target: 'Chest' },
     { name: 'Chest Fly (Machine/Dumbbell)', target: 'Chest' },
     { name: 'Dips (Chest Focus)', target: 'Chest' },
     { name: 'Push-ups', target: 'Chest' },

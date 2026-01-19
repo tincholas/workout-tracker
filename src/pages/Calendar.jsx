@@ -6,15 +6,17 @@ import VolumeChart from '../components/VolumeChart';
 import CardioChart from '../components/CardioChart';
 import { shareWorkout } from '../utils/shareWorkout';
 import { ChevronLeft, ChevronRight, X, Share2, Trophy } from 'lucide-react';
-
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+import { useTranslation } from 'react-i18next';
 
 export default function Calendar() {
     const { history, preferredUnit, extraTypes, personalRecords } = useWorkout();
     const location = useLocation();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
+    const { t } = useTranslation();
+
+    const DAYS = t('days_short', { returnObjects: true });
+    const MONTHS = t('months', { returnObjects: true });
 
     const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
     const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -207,14 +209,14 @@ export default function Calendar() {
 
             {hasSetsData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>Daily Volume ({preferredUnit})</h3>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>{t('daily_volume')} ({preferredUnit})</h3>
                     <VolumeChart history={history} currentMonth={month} currentYear={year} disableAnimation={location.state?.fromSwipe} />
                 </div>
             )}
 
             {hasCardioData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>Daily Cardio (Minutes)</h3>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>{t('daily_cardio')} ({t('minutes')})</h3>
                     <CardioChart history={history} currentMonth={month} currentYear={year} disableAnimation={location.state?.fromSwipe} />
                 </div>
             )}
@@ -229,7 +231,7 @@ export default function Calendar() {
                         <X size={24} />
                     </button>
 
-                    <h2 style={{ marginBottom: '2rem' }}>Workouts</h2>
+                    <h2 style={{ marginBottom: '2rem' }}>{t('workouts')}</h2>
 
                     {selectedDay.workouts.map(w => (
                         <div key={w.id} style={{ marginBottom: '2rem' }}>
@@ -245,18 +247,25 @@ export default function Calendar() {
 
                                     return (
                                         <div key={ex.id} className="card" style={{ padding: '1rem' }}>
-                                            <div style={{ fontWeight: 'bold', marginBottom: '0.8rem', color: 'var(--text-secondary)' }}>{ex.name}</div>
+                                            <div style={{ fontWeight: 'bold', marginBottom: '0.8rem', color: 'var(--text-secondary)' }}>
+                                                {t(`exercises.${ex.name}`, { defaultValue: ex.name })}
+                                            </div>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                                 {ex.target === 'Cardio' ? (
                                                     <span style={{
                                                         background: 'var(--bg-app)',
-                                                        boxShadow: 'var(--shadow-concave)',
-                                                        color: '#22c55e',
+                                                        boxShadow: (prRecord && prRecord.setId === ex.id) ? '0 0 10px rgba(234, 179, 8, 0.3), var(--shadow-convex)' : 'var(--shadow-concave)', // Highlighting
+                                                        color: (prRecord && prRecord.setId === ex.id) ? '#eab308' : '#22c55e',
+                                                        border: (prRecord && prRecord.setId === ex.id) ? '1px solid rgba(234, 179, 8, 0.2)' : 'none',
                                                         padding: '0.5rem 0.75rem',
                                                         borderRadius: '8px',
-                                                        fontSize: '0.9rem'
+                                                        fontSize: '0.9rem',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px'
                                                     }}>
-                                                        {((ex.accumulatedSeconds || 0) / 60).toFixed(1)} mins
+                                                        {((ex.accumulatedSeconds || 0) / 60).toFixed(1)} {t('minutes')}
+                                                        {prRecord && prRecord.setId === ex.id && <Trophy size={12} color="#eab308" />}
                                                     </span>
                                                 ) : (
                                                     ex.sets.map((s, i) => {
@@ -275,7 +284,7 @@ export default function Calendar() {
                                                                 color: isPR ? '#eab308' : 'var(--text-primary)',
                                                                 border: isPR ? '1px solid rgba(234, 179, 8, 0.2)' : 'none'
                                                             }}>
-                                                                {s.weight}kg x {s.reps}
+                                                                {s.weight}{preferredUnit} x {s.reps}
                                                                 {isPR && <Trophy size={12} color="#eab308" />}
                                                             </span>
                                                         );

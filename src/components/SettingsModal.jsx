@@ -1,12 +1,14 @@
 import React, { useRef } from 'react';
 import { useWorkout } from '../store/WorkoutContext';
-import { X, Download, Upload, Trash2, RefreshCw } from 'lucide-react';
+import { X, Download, Upload, Trash2, RefreshCw, Globe } from 'lucide-react';
 import { getAllData, importData, clearData } from '../store/db';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function SettingsModal({ onClose }) {
     const { preferredUnit, toggleUnit, restTimer, setRestTimer, notificationPermission, requestNotificationPermission } = useWorkout();
     const fileInputRef = useRef(null);
+    const { t, i18n } = useTranslation();
 
     const handleExport = async () => {
         try {
@@ -100,22 +102,22 @@ export default function SettingsModal({ onClose }) {
                 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0 }}>Settings</h2>
+                    <h2 style={{ margin: 0 }}>{t('settings')}</h2>
                     <button onClick={onClose} className="btn" style={{ padding: '0.5rem' }}><X size={24} /></button>
                 </div>
 
                 {/* Data Management */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', margin: 0 }}>Data</h3>
+                    <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', margin: 0 }}>{t('data')}</h3>
 
                     <button onClick={handleExport} className="btn btn-secondary" style={{ justifyContent: 'flex-start', gap: '1rem', padding: '1rem' }}>
                         <Upload size={20} />
-                        <span>Export Data</span>
+                        <span>{t('export_data')}</span>
                     </button>
 
                     <button onClick={handleImportClick} className="btn btn-secondary" style={{ justifyContent: 'flex-start', gap: '1rem', padding: '1rem' }}>
                         <Download size={20} />
-                        <span>Import Data</span>
+                        <span>{t('import_data')}</span>
                     </button>
                     <input
                         type="file"
@@ -127,18 +129,42 @@ export default function SettingsModal({ onClose }) {
 
                     <button onClick={handleClear} className="btn btn-danger" style={{ justifyContent: 'flex-start', gap: '1rem', padding: '1rem', color: '#ef4444', borderColor: '#ef4444' }}>
                         <Trash2 size={20} />
-                        <span>Clear All Info</span>
+                        <span>{t('clear_all_info')}</span>
                     </button>
                 </div>
 
                 {/* Preferences */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', margin: 0 }}>Preferences</h3>
+                    <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', margin: 0 }}>{t('preferences')}</h3>
+
+                    {/* Language Switcher */}
+                    <div className="card" style={{ padding: '1rem', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <Globe size={18} color="var(--text-muted)" />
+                            <span style={{ fontWeight: 'bold' }}>{t('language')}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                onClick={() => i18n.changeLanguage('en')}
+                                className={`btn ${i18n.resolvedLanguage === 'en' ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{ flex: 1, justifyContent: 'center' }}
+                            >
+                                English
+                            </button>
+                            <button
+                                onClick={() => i18n.changeLanguage('es')}
+                                className={`btn ${i18n.resolvedLanguage === 'es' ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{ flex: 1, justifyContent: 'center' }}
+                            >
+                                Español
+                            </button>
+                        </div>
+                    </div>
 
                     <button onClick={toggleUnit} className="btn btn-secondary" style={{ justifyContent: 'space-between', padding: '1rem' }}>
                         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                             <RefreshCw size={20} />
-                            <span>Units</span>
+                            <span>{t('units')}</span>
                         </div>
                         <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{preferredUnit}</span>
                     </button>
@@ -146,7 +172,7 @@ export default function SettingsModal({ onClose }) {
                     {/* Rest Timer Settings */}
                     <div className="card" style={{ padding: '1rem', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <label style={{ fontWeight: 'bold', color: restTimer.seconds > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>Default Rest Timer</label>
+                            <label style={{ fontWeight: 'bold', color: restTimer.seconds > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{t('default_rest_timer')}</label>
                             <input
                                 type="checkbox"
                                 checked={restTimer.enabled}
@@ -169,10 +195,10 @@ export default function SettingsModal({ onClose }) {
                                 }}
                                 style={{ flex: 1 }}
                             />
-                            <span style={{ color: 'var(--text-muted)' }}>minutes</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{t('minutes')}</span>
                         </div>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                            Auto-start timer when checking off a set.
+                            {t('auto_start_timer')}
                         </p>
 
                         {notificationPermission !== 'granted' && "Notification" in window && (
@@ -188,7 +214,7 @@ export default function SettingsModal({ onClose }) {
                                         border: '1px solid rgba(59, 130, 246, 0.3)'
                                     }}
                                 >
-                                    Enable Notifications
+                                    {t('enable_notifications')}
                                 </button>
                             </div>
                         )}
@@ -197,8 +223,8 @@ export default function SettingsModal({ onClose }) {
 
                 {/* About */}
                 <div style={{ marginTop: '1rem', textAlign: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: '1.6' }}>
-                    <p style={{ margin: 0 }}>Version {__APP_VERSION__}</p>
-                    <p style={{ margin: 0 }}>Updated: {__BUILD_DATE__}</p>
+                    <p style={{ margin: 0 }}>{t('version')} {__APP_VERSION__}</p>
+                    <p style={{ margin: 0 }}>{t('updated')}: {__BUILD_DATE__}</p>
                     <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-primary)' }}>&copy; Martin Nanni {new Date().getFullYear()}</p>
                 </div>
             </motion.div>

@@ -7,6 +7,7 @@ import { Line } from 'react-chartjs-2';
 import { ArrowLeft } from 'lucide-react';
 import { TARGET_COLORS } from '../store/models';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { useTranslation } from 'react-i18next';
 
 export default function ExerciseAnalytics() {
     const [searchParams] = useSearchParams();
@@ -17,6 +18,7 @@ export default function ExerciseAnalytics() {
     const { textMuted, textPrimary, borderSubtle } = useThemeColors();
     const [isEditing, setIsEditing] = React.useState(false);
     const [editName, setEditName] = React.useState(exerciseName || '');
+    const { t } = useTranslation();
 
     // Find current target from history (only used for single exercise mode)
     const currentTarget = React.useMemo(() => {
@@ -128,7 +130,7 @@ export default function ExerciseAnalytics() {
             const isCardio = currentTarget === 'Cardio';
 
             datasets.push({
-                label: isCardio ? 'Duration (Minutes)' : 'Max Weight (kg)',
+                label: isCardio ? t('duration_mins') : t('max_weight'),
                 data: dataPoints,
                 borderColor: isCardio ? TARGET_COLORS.Cardio : TARGET_COLORS.Chest, // Default to Red (Chest) for strength
                 backgroundColor: isCardio ? `${TARGET_COLORS.Cardio}80` : `${TARGET_COLORS.Chest}80`, // Add opacity
@@ -141,7 +143,7 @@ export default function ExerciseAnalytics() {
             labels,
             datasets: datasets
         };
-    }, [history, exerciseName, targetGroup, currentTarget]);
+    }, [history, exerciseName, targetGroup, currentTarget, t]);
 
     const options = {
         responsive: true,
@@ -149,7 +151,7 @@ export default function ExerciseAnalytics() {
             legend: { position: 'top', labels: { color: textMuted, boxWidth: 12 } },
             title: {
                 display: true,
-                text: targetGroup ? `${targetGroup} Progression` : 'Strength Progression',
+                text: targetGroup ? `${targetGroup} ${t('progression')}` : t('strength_progression'),
                 color: textPrimary
             },
             tooltip: {
@@ -183,7 +185,7 @@ export default function ExerciseAnalytics() {
         const changedTarget = editTarget && editTarget !== currentTarget;
 
         if (changedName || changedTarget) {
-            if (confirm(`Update "${exerciseName}"? \nName: ${editName}\nTarget: ${editTarget || 'Unchanged'}`)) {
+            if (confirm(t('confirm_update', { name: exerciseName, newName: editName, newTarget: editTarget || 'Unchanged' }))) {
                 renameExercise(exerciseName, editName, editTarget);
                 // Update URL without reload to reflect new name if changed
                 if (changedName) {
@@ -194,7 +196,7 @@ export default function ExerciseAnalytics() {
         setIsEditing(false);
     };
 
-    if (!exerciseName && !targetGroup) return <div style={{ padding: '1rem' }}>No data selected</div>;
+    if (!exerciseName && !targetGroup) return <div style={{ padding: '1rem' }}>{t('no_data_selected')}</div>;
 
     return (
         <div style={{ padding: 'var(--space-md)' }}>
@@ -203,14 +205,14 @@ export default function ExerciseAnalytics() {
                 style={{ marginBottom: '1rem', padding: '0.5rem' }}
                 onClick={() => navigate('/history')}
             >
-                <ArrowLeft size={16} /> Back
+                <ArrowLeft size={16} /> {t('back')}
             </button>
 
             {!targetGroup && (
                 <div>
                     {isEditing ? (
                         <form onSubmit={handleRename} style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '300px' }}>
-                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Name</label>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('exercises.name')}</label>
                             <input
                                 className="input"
                                 autoFocus
@@ -218,22 +220,22 @@ export default function ExerciseAnalytics() {
                                 onChange={e => setEditName(e.target.value)}
                             />
 
-                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Muscle Group</label>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('muscle_group')}</label>
                             <select
                                 className="input"
                                 style={{ padding: '0.8rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
                                 value={editTarget}
                                 onChange={e => setEditTarget(e.target.value)}
                             >
-                                <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>Select (Optional)</option>
+                                <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>{t('select_optional')}</option>
                                 {MUSCLE_GROUPS.map(g => (
                                     <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
                                 ))}
                             </select>
 
                             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                <button type="submit" className="btn btn-primary">Save</button>
-                                <button type="button" className="btn" onClick={() => setIsEditing(false)}>Cancel</button>
+                                <button type="submit" className="btn btn-primary">{t('save')}</button>
+                                <button type="button" className="btn" onClick={() => setIsEditing(false)}>{t('cancel')}</button>
                             </div>
                         </form>
                     ) : (
@@ -241,7 +243,7 @@ export default function ExerciseAnalytics() {
                             style={{ marginBottom: 'var(--space-lg)', cursor: 'text', borderBottom: '1px dashed #333', display: 'inline-block' }}
                             onClick={() => { setEditName(exerciseName); setIsEditing(true); }}
                         >
-                            {exerciseName} <span style={{ fontSize: '0.4em', color: 'var(--text-muted)', verticalAlign: 'middle' }}>(Edit)</span>
+                            {t(`exercises.${exerciseName}`, { defaultValue: exerciseName })} <span style={{ fontSize: '0.4em', color: 'var(--text-muted)', verticalAlign: 'middle' }}>({t('edit')})</span>
                         </h1>
                     )}
                 </div>
@@ -249,7 +251,7 @@ export default function ExerciseAnalytics() {
 
             {targetGroup && (
                 <h1 style={{ marginBottom: 'var(--space-lg)' }}>
-                    {targetGroup} <span style={{ fontSize: '0.5em', color: 'var(--text-muted)' }}>Group Analysis</span>
+                    {targetGroup} <span style={{ fontSize: '0.5em', color: 'var(--text-muted)' }}>{t('group_analysis')}</span>
                 </h1>
             )}
 
@@ -257,7 +259,7 @@ export default function ExerciseAnalytics() {
                 {chartData ? (
                     <Line options={options} data={chartData} />
                 ) : (
-                    <p style={{ color: 'var(--text-muted)' }}>No data recorded for this selection yet.</p>
+                    <p style={{ color: 'var(--text-muted)' }}>{t('no_data_recorded')}</p>
                 )}
             </div>
         </div>

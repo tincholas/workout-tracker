@@ -3,10 +3,12 @@ import { EXERCISE_TYPES, WORKOUT_TEMPLATES, EXERCISE_DATABASE, MUSCLE_GROUPS } f
 import { useWorkout } from '../store/WorkoutContext';
 import { X, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function ExercisePickerModal({ onClose, onSelect }) {
     const { history } = useWorkout();
     const [searchTerm, setSearchTerm] = useState('');
+    const { t } = useTranslation();
 
     const [newExerciseTarget, setNewExerciseTarget] = useState('');
 
@@ -59,13 +61,19 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
         const result = {};
 
         Object.keys(groupedExercises).forEach(key => {
-            const matches = groupedExercises[key].filter(ex => ex.name.toLowerCase().includes(lowerTerm));
+            // Translate the exercise name to check match against translated version or (optional) original
+            // Usually search should search the localized name.
+            const matches = groupedExercises[key].filter(ex => {
+                const translatedName = t(`exercises.${ex.name}`, { defaultValue: ex.name });
+                return translatedName.toLowerCase().includes(lowerTerm) || ex.name.toLowerCase().includes(lowerTerm);
+            });
+
             if (matches.length > 0) {
                 result[key] = matches;
             }
         });
         return result;
-    }, [groupedExercises, searchTerm]);
+    }, [groupedExercises, searchTerm, t]);
 
     return (
         <motion.div
@@ -79,7 +87,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
             }}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h2 style={{ margin: 0 }}>Select Exercise</h2>
+                <h2 style={{ margin: 0 }}>{t('select_exercise')}</h2>
                 <button className="btn" style={{ padding: '0.5rem' }} onClick={onClose}><X size={24} /></button>
             </div>
 
@@ -88,7 +96,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                 <input
                     className="input"
                     style={{ paddingLeft: '2.5rem', color: 'var(--text-primary)', backgroundColor: 'var(--bg-input)', border: 'none' }}
-                    placeholder="Search..."
+                    placeholder={t('search')}
                     autoFocus
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
@@ -114,7 +122,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                                         style={{ textAlign: 'left', padding: '1rem', cursor: 'pointer', color: 'var(--text-primary)' }}
                                         onClick={() => onSelect(ex)}
                                     >
-                                        {ex.name}
+                                        {t(`exercises.${ex.name}`, { defaultValue: ex.name })}
                                     </button>
                                 ))}
                             </div>
@@ -124,16 +132,16 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
 
                 {Object.values(filteredGroups).every(g => g.length === 0) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-                        <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>No matches found.</p>
+                        <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('no_matches')}</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>Convert to Custom Exercise:</label>
+                            <label style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{t('convert_custom')}</label>
                             <select
                                 className="input"
                                 style={{ padding: '0.8rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
                                 value={newExerciseTarget}
                                 onChange={e => setNewExerciseTarget(e.target.value)}
                             >
-                                <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>Select Muscle Group (Optional)</option>
+                                <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>{t('select_muscle_group')}</option>
                                 {MUSCLE_GROUPS.map(g => (
                                     <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
                                 ))}
@@ -142,7 +150,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                                 className="btn btn-primary"
                                 onClick={() => onSelect({ name: searchTerm, target: newExerciseTarget || 'Custom' })}
                             >
-                                Create "{searchTerm}"
+                                {t('create_exercise', { name: searchTerm })}
                             </button>
                         </div>
                     </div>

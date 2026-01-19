@@ -7,7 +7,9 @@ export const shareWorkout = async (workout, personalRecords = {}) => {
 
         if (ex.target === 'Cardio') {
             const mins = ((ex.accumulatedSeconds || 0) / 60).toFixed(1);
-            text += `: ${mins} mins\n`;
+            const prRecord = personalRecords[ex.name];
+            const isPR = prRecord && prRecord.setId === ex.id;
+            text += `: ${mins} mins${isPR ? ' 🏆' : ''}\n`;
         } else {
             text += `\n`;
             const completedSets = ex.sets.filter(s => s.completed);

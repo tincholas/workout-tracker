@@ -5,11 +5,13 @@ import confetti from 'canvas-confetti';
 import { Trophy, Calendar, CheckCircle, Home, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { shareWorkout } from '../utils/shareWorkout';
+import { useTranslation } from 'react-i18next';
 
 export default function WorkoutComplete() {
     const { history, personalRecords } = useWorkout();
     const navigate = useNavigate();
     const [stats, setStats] = useState({ consistency: 0, streak: 0, prs: [] });
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!history || history.length === 0) {
@@ -41,15 +43,26 @@ export default function WorkoutComplete() {
 
         // A. Identify PRs in this workout
         // If a set in this workout is currently holding the record, it's a new PR
+        // A. Identify PRs in this workout
         const newPrs = [];
         lastWorkout.exercises.forEach(ex => {
             const pr = personalRecords[ex.name];
-            if (pr && ex.sets.some(s => s.id === pr.setId)) {
+            if (!pr) return;
 
-                // Find the specific set that broke the record
+            // Check Cardio PR (Exercise ID match)
+            if (ex.target === 'Cardio' && pr.setId === ex.id) {
+                newPrs.push({
+                    exercise: ex.name,
+                    isCardio: true,
+                    duration: ex.accumulatedSeconds
+                });
+            }
+            // Check Strength PR (Set ID match)
+            else if (ex.sets && ex.sets.some(s => s.id === pr.setId)) {
                 const prSet = ex.sets.find(s => s.id === pr.setId);
                 newPrs.push({
                     exercise: ex.name,
+                    isCardio: false,
                     weight: prSet.weight,
                     reps: prSet.reps
                 });
@@ -113,7 +126,7 @@ export default function WorkoutComplete() {
                 transition={{ delay: 0.3 }}
                 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}
             >
-                Workout Complete!
+                {t('workout_complete')}
             </motion.h1>
 
             <motion.p
@@ -122,7 +135,7 @@ export default function WorkoutComplete() {
                 transition={{ delay: 0.4 }}
                 style={{ color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.2rem' }}
             >
-                Great job crushing your goals.
+                {t('workout_complete_message')}
             </motion.p>
 
             <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
@@ -135,7 +148,7 @@ export default function WorkoutComplete() {
                 >
                     <CheckCircle size={32} color="var(--color-primary)" style={{ marginBottom: '0.5rem' }} />
                     <span style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.streak}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Day Streak</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('day_streak')}</span>
                 </motion.div>
 
                 <motion.div
@@ -147,7 +160,7 @@ export default function WorkoutComplete() {
                 >
                     <Calendar size={32} color="#a855f7" style={{ marginBottom: '0.5rem' }} />
                     <span style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats.consistency}%</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>7-Day Consistency</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('consistency_7d')}</span>
                 </motion.div>
             </div>
 
@@ -158,7 +171,7 @@ export default function WorkoutComplete() {
                     transition={{ delay: 0.8 }}
                     style={{ width: '100%', marginBottom: '2rem' }}
                 >
-                    <h3 style={{ marginBottom: '1rem' }}>🏆 New Personal Records</h3>
+                    <h3 style={{ marginBottom: '1rem' }}>🏆 {t('new_prs')}</h3>
                     <div style={{ display: 'grid', gap: '0.5rem' }}>
                         {stats.prs.map((pr, i) => (
                             <div key={i} className="card" style={{
@@ -169,13 +182,20 @@ export default function WorkoutComplete() {
                                 border: '1px solid rgba(234, 179, 8, 0.3)',
                                 background: 'rgba(234, 179, 8, 0.1)'
                             }}>
-                                <span style={{ fontWeight: 'bold' }}>{pr.exercise}</span>
-                                <span>{pr.weight} x {pr.reps}</span>
+                                <span style={{ fontWeight: 'bold' }}>
+                                    {t(`exercises.${pr.exercise}`, { defaultValue: pr.exercise })}
+                                </span>
+                                {pr.isCardio ? (
+                                    <span>{((pr.duration || 0) / 60).toFixed(1)} {t('minutes')}</span>
+                                ) : (
+                                    <span>{pr.weight} x {pr.reps}</span>
+                                )}
                             </div>
                         ))}
                     </div>
                 </motion.div>
-            )}
+            )
+            }
 
             <div style={{ width: '100%', maxWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <motion.button
@@ -190,7 +210,7 @@ export default function WorkoutComplete() {
                         if (lastWorkout) shareWorkout(lastWorkout, personalRecords);
                     }}
                 >
-                    <Share2 size={20} /> Share Workout
+                    <Share2 size={20} /> {t('share_workout')}
                 </motion.button>
 
                 <motion.button
@@ -202,9 +222,9 @@ export default function WorkoutComplete() {
                     style={{ width: '100%', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
                     onClick={() => navigate('/')}
                 >
-                    <Home size={20} /> Return Home
+                    <Home size={20} /> {t('return_home')}
                 </motion.button>
             </div>
-        </div>
+        </div >
     );
 }

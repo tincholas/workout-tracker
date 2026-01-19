@@ -3,10 +3,12 @@ import { EXERCISE_TYPES, WORKOUT_TEMPLATES } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function ExerciseHistory() {
     const { history } = useWorkoutContext();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     // Get unique exercises grouped by Target
     const exercisesByTarget = useMemo(() => {
@@ -39,11 +41,12 @@ export default function ExerciseHistory() {
     return (
         <div style={{
             padding: 'var(--space-md)',
+            paddingBottom: '8rem', // Ensure last item is not hidden by navbar
             backgroundColor: 'var(--bg-app)',
             minHeight: '100vh',
             boxSizing: 'border-box'
         }}>
-            <h1 style={{ marginBottom: 'var(--space-md)' }}>Exercise History</h1>
+            <h1 style={{ marginBottom: 'var(--space-md)' }}>{t('exercise_history')}</h1>
 
             <div style={{ display: 'grid', gap: '1.5rem' }}>
                 {targets.map(target => (
@@ -79,7 +82,7 @@ export default function ExerciseHistory() {
                                     }}
                                     onClick={() => navigate(`/analytics?exercise=${encodeURIComponent(name)}`)}
                                 >
-                                    <span>{name}</span>
+                                    <span>{t(`exercises.${name}`, { defaultValue: name })}</span>
                                     <ChevronRight size={16} color="var(--text-muted)" />
                                 </div>
                             ))}

@@ -5,11 +5,13 @@ import RestTimer from './RestTimer';
 import { useWorkout } from '../store/WorkoutContext';
 import { RefreshCw, Plus, Minus, Trash2, MoreVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function ExerciseCard({ exercise, onSwap, ...props }) {
     const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise } = useWorkout();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
+    const { t } = useTranslation();
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -70,7 +72,9 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{exercise.name}</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+                        {t(`exercises.${exercise.name}`, { defaultValue: exercise.name })}
+                    </h3>
                     <AnimatePresence>
                         {isResting && (
                             <motion.div
@@ -119,25 +123,25 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                                     onClick={() => { reorderExercise(exercise.id, 'UP'); setShowMenu(false); }}
                                     style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
                                 >
-                                    <ArrowUp size={16} /> Move Up
+                                    <ArrowUp size={16} /> {t('move_up')}
                                 </button>
                                 <button
                                     onClick={() => { reorderExercise(exercise.id, 'DOWN'); setShowMenu(false); }}
                                     style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
                                 >
-                                    <ArrowDown size={16} /> Move Down
+                                    <ArrowDown size={16} /> {t('move_down')}
                                 </button>
                                 <button
                                     onClick={() => { onSwap(exercise.id); setShowMenu(false); }}
                                     style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
                                 >
-                                    <RefreshCw size={16} /> Replace
+                                    <RefreshCw size={16} /> {t('replace')}
                                 </button>
                                 <button
                                     onClick={() => { removeExercise(exercise.id); setShowMenu(false); }}
                                     style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#ef4444', textAlign: 'left', cursor: 'pointer' }}
                                 >
-                                    <Trash2 size={16} /> Remove
+                                    <Trash2 size={16} /> {t('remove')}
                                 </button>
                             </motion.div>
                         )}
@@ -150,14 +154,14 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
             ) : (
                 <>
                     <div style={{ marginBottom: '0.5rem', display: 'grid', gridTemplateColumns: 'auto 1fr 1fr auto', gap: '0.5rem', paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SET</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('set')}</span>
                         <span
                             onClick={toggleUnit}
                             style={{ fontSize: '0.8rem', color: 'var(--primary)', textAlign: 'center', cursor: 'pointer', fontWeight: 'bold' }}
                         >
                             {preferredUnit}
                         </span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>REPS</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>{t('reps')}</span>
                         <span style={{ width: '24px' }}></span>
                     </div>
 
@@ -189,7 +193,7 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                             onClick={() => addSet(exercise.id)}
                             style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                         >
-                            <Plus size={16} /> Set
+                            <Plus size={16} /> {t('add_set')}
                         </button>
                         <button
                             className="btn btn-secondary"
@@ -197,7 +201,7 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                             style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                             disabled={exercise.sets.length <= 1}
                         >
-                            <Minus size={16} /> Set
+                            <Minus size={16} /> {t('remove_set')}
                         </button>
                     </div>
                 </>
