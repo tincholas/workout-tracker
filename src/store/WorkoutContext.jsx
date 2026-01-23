@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE } from './models';
 import { initDB, getData, setData } from './db';
@@ -176,13 +176,22 @@ export const WorkoutProvider = ({ children }) => {
         setData('workout_rest_timer', restTimer);
     }, [history, activeWorkout, extraTypes, preferredUnit, restTimer, isInitialized]);
 
+    // Keep Ref updated for Interval to avoid stale closures
+    const activeRestTimerRef = useRef(activeRestTimer);
+    useEffect(() => {
+        activeRestTimerRef.current = activeRestTimer;
+    }, [activeRestTimer]);
+
     // Timer Notification Logic
     useEffect(() => {
         let interval = null;
         if (activeRestTimer) {
             interval = setInterval(() => {
                 const now = Date.now();
-                if (now >= activeRestTimer.endTime) {
+                // Use Ref to ensure we check against the LATEST endTime, even if interval wasn't reset perfectly
+                const timer = activeRestTimerRef.current;
+
+                if (timer && now >= timer.endTime) {
                     // Send Notification
                     if ("Notification" in window && Notification.permission === "granted") {
                         // Try Service Worker first
