@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import confetti from 'canvas-confetti';
 import { Trophy, Calendar, CheckCircle, Home, Share2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { shareWorkout } from '../utils/shareWorkout';
 import { useTranslation } from 'react-i18next';
 
 export default function WorkoutComplete() {
     const { history, personalRecords, exercisePRs } = useWorkout();
     const navigate = useNavigate();
-    const [stats, setStats] = useState({ consistency: 0, streak: 0, prs: [] });
+    const [stats, setStats] = useState({ consistency: 0, streak: 0, prStreak: 0, prs: [] });
     const { t } = useTranslation();
 
     useEffect(() => {
@@ -103,7 +104,18 @@ export default function WorkoutComplete() {
         }
         const consistency = Math.round((daysActive / 7) * 100);
 
-        setStats({ consistency, streak, prs: newPrs });
+        // C. PR Streak: Count consecutive workouts with at least one PR
+        // Loop backwards through history from most recent
+        let prStreak = 0;
+        for (let i = history.length - 1; i >= 0; i--) {
+            if (history[i].hadPR) {
+                prStreak++;
+            } else {
+                break; // Stop at first workout without PR
+            }
+        }
+
+        setStats({ consistency, streak, prStreak, prs: newPrs });
 
         return () => clearInterval(interval);
     }, [history, navigate, personalRecords, exercisePRs]);
@@ -170,6 +182,36 @@ export default function WorkoutComplete() {
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t('consistency_7d')}</span>
                 </motion.div>
             </div>
+
+            {stats.prStreak > 0 && (
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.7 }}
+                    className="card"
+                    style={{
+                        alignSelf: 'stretch',
+                        padding: '1.5rem',
+                        marginBottom: '2rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '1rem',
+                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(234, 88, 12, 0.1))',
+                        border: '1px solid rgba(245, 158, 11, 0.3)'
+                    }}
+                >
+                    <span style={{ fontSize: '2rem' }}>🔥</span>
+                    <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#f59e0b' }}>
+                            {stats.prStreak} {stats.prStreak === 1 ? t('workout', { defaultValue: 'workout' }) : t('workouts', { defaultValue: 'workouts' })}
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            {t('continuous_improvement', { defaultValue: 'Continuous Improvement Streak' })}
+                        </div>
+                    </div>
+                </motion.div>
+            )}
 
             {stats.prs.length > 0 && (
                 <motion.div

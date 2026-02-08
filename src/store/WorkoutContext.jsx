@@ -91,6 +91,91 @@ export const WorkoutProvider = ({ children }) => {
                         setHistory(migratedHistory);
                         console.log("Migrated Exercise Names in History");
                     }
+
+                    // Migration: Backfill hadPR for legacy workouts
+                    const historyToCheck = hasChanges ? migratedHistory : savedHistory;
+                    const needsHadPRMigration = historyToCheck.some(w => w.hadPR === undefined);
+
+                    if (needsHadPRMigration) {
+                        // Sort oldest first for rolling PR calculation
+                        const sorted = [...historyToCheck].sort((a, b) =>
+                            new Date(a.endTime) - new Date(b.endTime));
+
+                        // Rolling PR maxes
+                        const setPRs = {};      // { exerciseName: maxSetVolume }
+                        const exerciseTotalPRs = {}; // { exerciseName: maxTotalVolume }
+
+                        const withHadPR = sorted.map(workout => {
+                            // Skip if already has hadPR defined
+                            if (workout.hadPR !== undefined) {
+                                // Still update PR maxes from this workout
+                                for (const ex of workout.exercises || []) {
+                                    if (ex.target !== 'Cardio' && ex.sets) {
+                                        for (const s of ex.sets) {
+                                            if (s.completed && s.weight > 0 && s.reps > 0) {
+                                                const vol = s.weight * s.reps;
+                                                if (vol > (setPRs[ex.name] || 0)) {
+                                                    setPRs[ex.name] = vol;
+                                                }
+                                            }
+                                        }
+                                        const totalVol = ex.sets.reduce((sum, s) =>
+                                            sum + (s.completed ? s.weight * s.reps : 0), 0);
+                                        if (totalVol > (exerciseTotalPRs[ex.name] || 0)) {
+                                            exerciseTotalPRs[ex.name] = totalVol;
+                                        }
+                                    }
+                                    if (ex.target === 'Cardio' && ex.accumulatedSeconds > 0) {
+                                        if (ex.accumulatedSeconds > (setPRs[ex.name] || 0)) {
+                                            setPRs[ex.name] = ex.accumulatedSeconds;
+                                        }
+                                    }
+                                }
+                                return workout;
+                            }
+
+                            let hadPR = false;
+
+                            for (const ex of workout.exercises || []) {
+                                // Check set-level PRs
+                                if (ex.target !== 'Cardio' && ex.sets) {
+                                    const currentSetMax = setPRs[ex.name] || 0;
+                                    for (const s of ex.sets) {
+                                        if (s.completed && s.weight > 0 && s.reps > 0) {
+                                            const vol = s.weight * s.reps;
+                                            if (vol > currentSetMax) {
+                                                hadPR = true;
+                                                setPRs[ex.name] = vol;
+                                            }
+                                        }
+                                    }
+
+                                    // Check exercise-level PRs (total volume)
+                                    const totalVol = ex.sets.reduce((sum, s) =>
+                                        sum + (s.completed ? s.weight * s.reps : 0), 0);
+                                    if (totalVol > (exerciseTotalPRs[ex.name] || 0)) {
+                                        hadPR = true;
+                                        exerciseTotalPRs[ex.name] = totalVol;
+                                    }
+                                }
+
+                                // Check cardio PRs
+                                if (ex.target === 'Cardio' && ex.accumulatedSeconds > 0) {
+                                    if (ex.accumulatedSeconds > (setPRs[ex.name] || 0)) {
+                                        hadPR = true;
+                                        setPRs[ex.name] = ex.accumulatedSeconds;
+                                    }
+                                }
+                            }
+
+                            return { ...workout, hadPR };
+                        });
+
+                        // Save migrated data back to DB
+                        setData('workout_history', withHadPR);
+                        setHistory(withHadPR);
+                        console.log("Migrated hadPR for legacy workouts");
+                    }
                 }
             } catch (err) {
                 console.error("Failed to load data from DB:", err);
@@ -199,7 +284,7 @@ export const WorkoutProvider = ({ children }) => {
                 const elapsed = (now - start) / 1000;
                 return {
                     ...ex,
-                    timerState: 'finished', // or paused/idle
+                    timerState: 'finished',
                     timerStart: null,
                     accumulatedSeconds: (ex.accumulatedSeconds || 0) + elapsed
                 };
@@ -207,10 +292,49 @@ export const WorkoutProvider = ({ children }) => {
             return ex;
         });
 
+        // Calculate if this workout had any PRs
+        let hadPR = false;
+
+        for (const ex of finalizedExercises) {
+            // Check set-level PRs (single best set volume)
+            if (ex.target !== 'Cardio' && ex.sets) {
+                const historicalBest = personalRecords[ex.name]?.volume || 0;
+                for (const s of ex.sets) {
+                    if (s.completed && s.weight > 0 && s.reps > 0) {
+                        if (s.weight * s.reps > historicalBest) {
+                            hadPR = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Check exercise-level PRs (total volume)
+            if (!hadPR && ex.target !== 'Cardio' && ex.sets) {
+                const totalVol = ex.sets.reduce((sum, s) =>
+                    sum + (s.completed ? s.weight * s.reps : 0), 0);
+                const historicalTotalBest = exercisePRs[ex.name]?.totalVolume || 0;
+                if (totalVol > historicalTotalBest) {
+                    hadPR = true;
+                }
+            }
+
+            // Check cardio PRs (duration)
+            if (!hadPR && ex.target === 'Cardio' && ex.accumulatedSeconds > 0) {
+                const historicalCardio = personalRecords[ex.name]?.volume || 0;
+                if (ex.accumulatedSeconds > historicalCardio) {
+                    hadPR = true;
+                }
+            }
+
+            if (hadPR) break;
+        }
+
         const completed = {
             ...activeWorkout,
             exercises: finalizedExercises,
-            endTime: endTime.toISOString()
+            endTime: endTime.toISOString(),
+            hadPR
         };
 
         setHistory([...history, completed]);
