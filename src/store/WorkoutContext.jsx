@@ -98,6 +98,42 @@ export const WorkoutProvider = ({ children }) => {
         return records;
     }, [history]);
 
+    // NEW: Track exercise-level PRs (total volume across all sets in one workout)
+    // Returns: { "Exercise Name": { totalVolume: 1500, workoutId: "abc-123", date: "..." } }
+    const exercisePRs = React.useMemo(() => {
+        const records = {}; // { exName: { totalVolume: 0, workoutId: null, date: null } }
+
+        const sortedHistory = [...(history || [])].sort((a, b) =>
+            new Date(a.endTime) - new Date(b.endTime)
+        );
+
+        sortedHistory.forEach(workout => {
+            workout.exercises?.forEach(ex => {
+                // Skip cardio - it uses duration-based PRs from personalRecords
+                if (ex.target === 'Cardio') return;
+
+                const totalVol = ex.sets?.reduce((sum, s) => {
+                    const setVol = s.completed ? s.weight * s.reps : 0;
+                    return sum + setVol;
+                }, 0) || 0;
+
+                if (totalVol === 0) return;
+
+                const existing = records[ex.name] || { totalVolume: 0 };
+
+                if (totalVol > existing.totalVolume) {
+                    records[ex.name] = {
+                        totalVolume: totalVol,
+                        workoutId: workout.id,
+                        date: workout.endTime
+                    };
+                }
+            });
+        });
+
+        return records;
+    }, [history]);
+
     // Initialize DB and Load Data
     useEffect(() => {
         const loadData = async () => {
@@ -566,6 +602,7 @@ export const WorkoutProvider = ({ children }) => {
             cancelRestTimer,
             extendRestTimer,
             personalRecords,
+            exercisePRs,
             notificationPermission,
             requestNotificationPermission
         }}>

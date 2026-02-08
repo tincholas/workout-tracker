@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, X, Share2, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Calendar() {
-    const { history, preferredUnit, extraTypes, personalRecords } = useWorkout();
+    const { history, preferredUnit, extraTypes, personalRecords, exercisePRs } = useWorkout();
     const location = useLocation();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
@@ -70,7 +70,7 @@ export default function Calendar() {
     };
 
     const handleShare = (workout) => {
-        shareWorkout(workout, personalRecords);
+        shareWorkout(workout, personalRecords, exercisePRs);
     };
 
     const renderCalendar = () => {
@@ -244,11 +244,24 @@ export default function Calendar() {
                             <div style={{ display: 'grid', gap: '1rem' }}>
                                 {w.exercises.map(ex => {
                                     const prRecord = personalRecords[ex.name];
+                                    const hasExercisePR = exercisePRs[ex.name]?.workoutId === w.id;
 
                                     return (
-                                        <div key={ex.id} className="card" style={{ padding: '1rem' }}>
-                                            <div style={{ fontWeight: 'bold', marginBottom: '0.8rem', color: 'var(--text-secondary)' }}>
+                                        <div key={ex.id} className="card" style={{
+                                            padding: '1rem',
+                                            border: hasExercisePR ? '1px solid rgba(234, 179, 8, 0.4)' : 'none',
+                                            boxShadow: hasExercisePR ? '0 0 12px rgba(234, 179, 8, 0.2)' : undefined
+                                        }}>
+                                            <div style={{
+                                                fontWeight: 'bold',
+                                                marginBottom: '0.8rem',
+                                                color: hasExercisePR ? '#eab308' : 'var(--text-secondary)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem'
+                                            }}>
                                                 {t(`exercises.${ex.name}`, { defaultValue: ex.name })}
+                                                {hasExercisePR && <Trophy size={16} color="#eab308" />}
                                             </div>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                                 {ex.target === 'Cardio' ? (

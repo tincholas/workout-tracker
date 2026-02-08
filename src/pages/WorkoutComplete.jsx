@@ -8,7 +8,7 @@ import { shareWorkout } from '../utils/shareWorkout';
 import { useTranslation } from 'react-i18next';
 
 export default function WorkoutComplete() {
-    const { history, personalRecords } = useWorkout();
+    const { history, personalRecords, exercisePRs } = useWorkout();
     const navigate = useNavigate();
     const [stats, setStats] = useState({ consistency: 0, streak: 0, prs: [] });
     const { t } = useTranslation();
@@ -47,18 +47,26 @@ export default function WorkoutComplete() {
         const newPrs = [];
         lastWorkout.exercises.forEach(ex => {
             const pr = personalRecords[ex.name];
-            if (!pr) return;
+            const exercisePR = exercisePRs[ex.name];
 
-            // Check Cardio PR (Exercise ID match)
-            if (ex.target === 'Cardio' && pr.setId === ex.id) {
+            // Check Exercise-Level PR first (total volume)
+            if (exercisePR?.workoutId === lastWorkout.id && ex.target !== 'Cardio') {
+                newPrs.push({
+                    exercise: ex.name,
+                    isExercisePR: true,
+                    totalVolume: exercisePR.totalVolume
+                });
+            }
+            // Check Cardio PR (Exercise ID match) - uses existing personalRecords
+            else if (ex.target === 'Cardio' && pr?.setId === ex.id) {
                 newPrs.push({
                     exercise: ex.name,
                     isCardio: true,
                     duration: ex.accumulatedSeconds
                 });
             }
-            // Check Strength PR (Set ID match)
-            else if (ex.sets && ex.sets.some(s => s.id === pr.setId)) {
+            // Check Strength Set PR (Set ID match) - only if no exercise PR
+            else if (pr && ex.sets?.some(s => s.id === pr.setId)) {
                 const prSet = ex.sets.find(s => s.id === pr.setId);
                 newPrs.push({
                     exercise: ex.name,
@@ -99,7 +107,7 @@ export default function WorkoutComplete() {
         setStats({ consistency, streak, prs: newPrs });
 
         return () => clearInterval(interval);
-    }, [history, navigate, personalRecords]);
+    }, [history, navigate, personalRecords, exercisePRs]);
 
     return (
         <div className="page-container" style={{
@@ -187,6 +195,8 @@ export default function WorkoutComplete() {
                                 </span>
                                 {pr.isCardio ? (
                                     <span>{((pr.duration || 0) / 60).toFixed(1)} {t('minutes')}</span>
+                                ) : pr.isExercisePR ? (
+                                    <span>{pr.totalVolume} {t('volume_unit', { defaultValue: 'kg vol' })}</span>
                                 ) : (
                                     <span>{pr.weight} x {pr.reps}</span>
                                 )}
@@ -207,7 +217,7 @@ export default function WorkoutComplete() {
                     style={{ width: '100%', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-card)', color: 'var(--color-primary)' }}
                     onClick={() => {
                         const lastWorkout = history[history.length - 1];
-                        if (lastWorkout) shareWorkout(lastWorkout, personalRecords);
+                        if (lastWorkout) shareWorkout(lastWorkout, personalRecords, exercisePRs);
                     }}
                 >
                     <Share2 size={20} /> {t('share_workout')}
