@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { EXERCISE_TYPES } from '../store/models';
 
 export default function WorkoutSession() {
-    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise, restTimer } = useWorkout();
+    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise } = useWorkout();
     const navigate = useNavigate();
     const { t } = useTranslation();
 

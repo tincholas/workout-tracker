@@ -36,7 +36,7 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
     const isResting = activeRestTimer && activeRestTimer.exerciseId === exercise.id;
 
     // --- PR Logic (Single Best Set) ---
-    const { personalRecords } = useWorkout();
+    const { personalRecords, exercisePRs } = useWorkout();
 
     const activePRSetId = React.useMemo(() => {
         // Start with historical best
@@ -60,6 +60,25 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         return bestSetId;
     }, [exercise.sets, exercise.name, personalRecords]);
 
+    // --- Exercise-Level PR Logic (Total Volume) ---
+    const isExercisePR = React.useMemo(() => {
+        // Skip cardio - they use duration-based PRs
+        if (exercise.target === 'Cardio') return false;
+
+        // Calculate current completed volume
+        const currentVolume = exercise.sets.reduce((sum, s) => {
+            return sum + (s.completed ? (s.weight * s.reps) : 0);
+        }, 0);
+
+        if (currentVolume === 0) return false;
+
+        // Get historical best
+        const historicalBest = exercisePRs[exercise.name]?.totalVolume || 0;
+
+        // Current volume beats historical best
+        return currentVolume > historicalBest;
+    }, [exercise.sets, exercise.name, exercise.target, exercisePRs]);
+
     return (
         <motion.div
             layout
@@ -67,7 +86,15 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
             animate={props.variants ? undefined : { opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
             className="card"
-            style={{ padding: '1rem', marginBottom: '1rem', overflow: 'hidden' }}
+            style={{
+                padding: '1rem',
+                marginBottom: '1rem',
+                overflow: 'hidden',
+                ...(isExercisePR && {
+                    border: '2px solid #f59e0b',
+                    boxShadow: '0 0 12px rgba(245, 158, 11, 0.3)'
+                })
+            }}
             {...props}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

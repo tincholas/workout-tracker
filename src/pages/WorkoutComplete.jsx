@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import confetti from 'canvas-confetti';
 import { Trophy, Calendar, CheckCircle, Home, Share2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { shareWorkout } from '../utils/shareWorkout';
 import { useTranslation } from 'react-i18next';
 
@@ -81,7 +80,7 @@ export default function WorkoutComplete() {
         // Helper to normalize date to YYYY-MM-DD
         const toDay = (dateStr) => new Date(dateStr).toISOString().split('T')[0];
 
-        const today = toDay(new Date());
+        const _today = toDay(new Date());
         const daysWithWorkouts = new Set(history.map(w => toDay(w.endTime)));
 
         // Streak: Count backwards from today (or yesterday if today is done)

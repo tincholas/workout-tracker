@@ -1,138 +1,41 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE } from './models';
 import { initDB, getData, setData } from './db';
+import { usePersonalRecords } from './hooks/usePersonalRecords';
+import { useRestTimer } from './hooks/useRestTimer';
 
 const WorkoutContext = createContext();
 
 export const WorkoutProvider = ({ children }) => {
-    // ... rest of the file ...
     // State
     const [history, setHistory] = useState([]);
     const [activeWorkout, setActiveWorkout] = useState(null);
     const [extraTypes, setExtraTypes] = useState([]);
-    const [preferredUnit, setPreferredUnit] = useState('KG'); // 'KG' or 'LBS'
+    const [preferredUnit, setPreferredUnit] = useState('KG');
     const [restTimer, setRestTimer] = useState({ enabled: false, seconds: 60 });
-    const [activeRestTimer, setActiveRestTimer] = useState(null); // { exerciseId, endTime, totalDuration }
     const [isInitialized, setIsInitialized] = useState(false);
     const [notificationPermission, setNotificationPermission] = useState('default');
 
-    // ... imports etc ...
-
+    // Notification permission check
     useEffect(() => {
         if ("Notification" in window) {
             setNotificationPermission(Notification.permission);
         }
     }, []);
 
-    const startRestTimer = (exerciseId, durationSeconds) => {
-        requestNotificationPermission();
-        const now = Date.now();
-        setActiveRestTimer({
-            exerciseId,
-            endTime: now + (durationSeconds * 1000),
-            totalDuration: durationSeconds * 1000
+    const requestNotificationPermission = () => {
+        if (!("Notification" in window)) return;
+        Notification.requestPermission().then((permission) => {
+            setNotificationPermission(permission);
         });
     };
 
-    const cancelRestTimer = () => {
-        setActiveRestTimer(null);
-    };
+    // Rest Timer - from hook
+    const { activeRestTimer, startRestTimer, cancelRestTimer, extendRestTimer } = useRestTimer(requestNotificationPermission);
 
-    const extendRestTimer = (seconds) => {
-        if (!activeRestTimer) return;
-        setActiveRestTimer(prev => ({
-            ...prev,
-            endTime: prev.endTime + (seconds * 1000),
-            totalDuration: prev.totalDuration + (seconds * 1000)
-        }));
-    };
-
-    // Calculate Personal Records (Max Volume per Exercise)
-    // Returns: { "Exercise Name": { volume: 100, setId: "abc-123", date: "..." } }
-    const personalRecords = React.useMemo(() => {
-        const records = {}; // { exName: { volume: 0, setId: null } }
-
-        // We must sort history chronologically to ensure "First-to-achieve" rule works correctly
-        const sortedHistory = [...(history || [])].sort((a, b) => new Date(a.endTime) - new Date(b.endTime));
-
-        sortedHistory.forEach(workout => {
-            if (!workout.exercises) return;
-            workout.exercises.forEach(ex => {
-                // Cardio PR Logic (Duration)
-                if (ex.target === 'Cardio' && ex.accumulatedSeconds > 0) {
-                    const duration = ex.accumulatedSeconds;
-                    const existing = records[ex.name] || { volume: 0, setId: null };
-
-                    if (duration > existing.volume) {
-                        records[ex.name] = {
-                            volume: duration, // Storing seconds as "volume" for consistency
-                            setId: ex.id, // Use exercise ID as reference
-                            date: workout.endTime,
-                            isCardio: true
-                        };
-                    }
-                }
-                // Strength PR Logic (Max Volume per Set)
-                else if (ex.sets) {
-                    ex.sets.forEach(s => {
-                        if (s.completed && s.weight > 0 && s.reps > 0) {
-                            const vol = s.weight * s.reps;
-                            const existing = records[ex.name] || { volume: 0, setId: null };
-
-                            // Strict strict inequality: Only update if strictly higher.
-                            // This preserves the "First Set" as the record holder in case of ties.
-                            if (vol > existing.volume) {
-                                records[ex.name] = {
-                                    volume: vol,
-                                    setId: s.id,
-                                    date: workout.endTime,
-                                    isCardio: false
-                                };
-                            }
-                        }
-                    });
-                }
-            });
-        });
-        return records;
-    }, [history]);
-
-    // NEW: Track exercise-level PRs (total volume across all sets in one workout)
-    // Returns: { "Exercise Name": { totalVolume: 1500, workoutId: "abc-123", date: "..." } }
-    const exercisePRs = React.useMemo(() => {
-        const records = {}; // { exName: { totalVolume: 0, workoutId: null, date: null } }
-
-        const sortedHistory = [...(history || [])].sort((a, b) =>
-            new Date(a.endTime) - new Date(b.endTime)
-        );
-
-        sortedHistory.forEach(workout => {
-            workout.exercises?.forEach(ex => {
-                // Skip cardio - it uses duration-based PRs from personalRecords
-                if (ex.target === 'Cardio') return;
-
-                const totalVol = ex.sets?.reduce((sum, s) => {
-                    const setVol = s.completed ? s.weight * s.reps : 0;
-                    return sum + setVol;
-                }, 0) || 0;
-
-                if (totalVol === 0) return;
-
-                const existing = records[ex.name] || { totalVolume: 0 };
-
-                if (totalVol > existing.totalVolume) {
-                    records[ex.name] = {
-                        totalVolume: totalVol,
-                        workoutId: workout.id,
-                        date: workout.endTime
-                    };
-                }
-            });
-        });
-
-        return records;
-    }, [history]);
+    // Personal Records - from hook
+    const { personalRecords, exercisePRs } = usePersonalRecords(history);
 
     // Initialize DB and Load Data
     useEffect(() => {
@@ -212,45 +115,6 @@ export const WorkoutProvider = ({ children }) => {
         setData('workout_rest_timer', restTimer);
     }, [history, activeWorkout, extraTypes, preferredUnit, restTimer, isInitialized]);
 
-    // Keep Ref updated for Interval to avoid stale closures
-    const activeRestTimerRef = useRef(activeRestTimer);
-    useEffect(() => {
-        activeRestTimerRef.current = activeRestTimer;
-    }, [activeRestTimer]);
-
-    // Timer Notification Logic
-    useEffect(() => {
-        let interval = null;
-        if (activeRestTimer) {
-            interval = setInterval(() => {
-                const now = Date.now();
-                // Use Ref to ensure we check against the LATEST endTime, even if interval wasn't reset perfectly
-                const timer = activeRestTimerRef.current;
-
-                if (timer && now >= timer.endTime) {
-                    // Send Notification
-                    if ("Notification" in window && Notification.permission === "granted") {
-                        // Try Service Worker first
-                        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                            navigator.serviceWorker.ready.then(reg => {
-                                reg.showNotification("Cool Down Finished", {
-                                    body: "Time for your next set!",
-                                    icon: '/bicep.svg',
-                                    vibrate: [200, 100, 200]
-                                });
-                            }).catch(() => new Notification("Cool Down Finished", { body: "Time for your next set!", icon: '/bicep.svg' }));
-                        } else {
-                            new Notification("Cool Down Finished", { body: "Time for your next set!", icon: '/bicep.svg' });
-                        }
-                    }
-                    setActiveRestTimer(null);
-                }
-            }, 1000);
-        }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [activeRestTimer]);
 
     if (!isInitialized) {
         // Return a loading state or null
@@ -268,14 +132,6 @@ export const WorkoutProvider = ({ children }) => {
     // Actions
     const toggleUnit = () => {
         setPreferredUnit(prev => prev === 'KG' ? 'LBS' : 'KG');
-    };
-
-    const requestNotificationPermission = () => {
-        if (!("Notification" in window)) return;
-
-        Notification.requestPermission().then((permission) => {
-            setNotificationPermission(permission);
-        });
     };
 
     const createCustomType = (name, color, icon) => {
@@ -592,7 +448,6 @@ export const WorkoutProvider = ({ children }) => {
             preferredUnit,
             extraTypes,
             createCustomType,
-            deleteCustomType,
             deleteCustomType,
             updateExercise,
             restTimer,
