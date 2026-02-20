@@ -121,7 +121,7 @@ export default function GestureLayout({ children, leftPage, leftPath, rightPage,
                             width: '100%',
                             height: window.innerHeight,
                             overflowY: 'auto',
-                            paddingBottom: '80px',
+                            paddingBottom: '120px',
                             background: 'var(--bg-app)'
                         }}
                     >
@@ -144,7 +144,7 @@ export default function GestureLayout({ children, leftPage, leftPath, rightPage,
                             width: '100%',
                             height: window.innerHeight,
                             overflowY: 'auto',
-                            paddingBottom: '80px',
+                            paddingBottom: '120px',
                             background: 'var(--bg-app)'
                         }}
                     >

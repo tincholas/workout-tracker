@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import { X, Download, Upload, Trash2, RefreshCw, Globe } from 'lucide-react';
 import { getAllData, importData, clearData } from '../store/db';
@@ -9,6 +10,14 @@ export default function SettingsModal({ onClose }) {
     const { preferredUnit, toggleUnit, restTimer, setRestTimer, notificationPermission, requestNotificationPermission } = useWorkout();
     const fileInputRef = useRef(null);
     const { t, i18n } = useTranslation();
+
+    // Lock body scroll while modal is open
+    useEffect(() => {
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = prev; };
+    }, []);
+
 
     const handleExport = async () => {
         try {
@@ -73,7 +82,7 @@ export default function SettingsModal({ onClose }) {
         }
     };
 
-    return (
+    return createPortal(
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -81,7 +90,7 @@ export default function SettingsModal({ onClose }) {
             transition={{ duration: 0.2 }}
             style={{
                 position: 'fixed', inset: 0, background: 'var(--bg-overlay)', zIndex: 200,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+                overflowY: 'auto', overflowX: 'hidden', padding: '1rem 1rem 120px 1rem'
             }}
         >
             <motion.div
@@ -93,12 +102,12 @@ export default function SettingsModal({ onClose }) {
                 style={{
                     width: '100%',
                     maxWidth: '400px',
+                    boxSizing: 'border-box',
                     padding: '1.5rem',
+                    margin: '0 auto',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '1.5rem',
-                    maxHeight: '90vh',
-                    overflowY: 'auto'
+                    gap: '1.5rem'
                 }}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -229,5 +238,5 @@ export default function SettingsModal({ onClose }) {
                 </div>
             </motion.div>
         </motion.div>
-    );
+        , document.body);
 }

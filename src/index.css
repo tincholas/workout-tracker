@@ -12,6 +12,9 @@
 
   --bg-overlay: rgba(0, 0, 0, 0.85);
 
+  /* Navbar clearance: 76px nav + 32px floating button overhang + buffer */
+  --navbar-clearance: 120px;
+
   --shadow-convex:
     6px 6px 12px var(--shadow-dark),
     -6px -6px 12px var(--shadow-light);

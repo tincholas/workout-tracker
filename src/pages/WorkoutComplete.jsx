@@ -123,7 +123,7 @@ export default function WorkoutComplete() {
     return (
         <div className="page-container" style={{
             padding: 'var(--space-lg)',
-            paddingBottom: '6rem', // Ensure space above nav bar
+            paddingBottom: '120px', // Ensure space above nav bar
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',

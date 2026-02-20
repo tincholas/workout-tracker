@@ -20,7 +20,7 @@ function App() {
   return (
     <div className="app-container">
       <ScrollToTop />
-      <main style={{ flex: 1, paddingBottom: '80px' }}>
+      <main style={{ flex: 1, paddingBottom: 'var(--navbar-clearance)' }}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={

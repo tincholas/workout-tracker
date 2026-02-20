@@ -180,7 +180,7 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                 <CardioTimer exercise={exercise} />
             ) : (
                 <>
-                    <div style={{ marginBottom: '0.5rem', display: 'grid', gridTemplateColumns: 'auto 1fr 1fr auto', gap: '0.5rem', paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
+                    <div style={{ marginBottom: '0.5rem', display: 'grid', gridTemplateColumns: '2rem 1fr 1fr 36px', gap: '0.5rem', paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('set')}</span>
                         <span
                             onClick={toggleUnit}
@@ -189,7 +189,7 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                             {preferredUnit}
                         </span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>{t('reps')}</span>
-                        <span style={{ width: '24px' }}></span>
+                        <span style={{ width: '36px' }}></span>
                     </div>
 
                     <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>

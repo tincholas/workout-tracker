@@ -62,7 +62,7 @@ export default function WorkoutSession() {
     };
 
     return (
-        <div style={{ padding: 'var(--space-md)', paddingBottom: '100px' }}>
+        <div style={{ padding: 'var(--space-md)', paddingBottom: '120px' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
                 <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{displayName}</h1>

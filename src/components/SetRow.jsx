@@ -111,7 +111,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
     return (
         <div style={{
             display: 'grid',
-            gridTemplateColumns: 'auto 1fr 1fr auto',
+            gridTemplateColumns: '2rem 1fr 1fr 36px',
             gap: '0.5rem',
             alignItems: 'center',
             marginBottom: '0.5rem',

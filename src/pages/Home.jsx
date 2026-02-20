@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'framer-motion';
 import { EXERCISE_TYPES, SPLIT_COLORS } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
@@ -63,6 +64,15 @@ export default function Home() {
     const [selectedIcon, setSelectedIcon] = useState('Star');
     const [isStarting, setIsStarting] = useState(false); // Prevents flicker during transition
     const { t } = useTranslation();
+
+    // Lock body scroll when any modal is open
+    useEffect(() => {
+        if (showModal || showSettings) {
+            const prev = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            return () => { document.body.style.overflow = prev; };
+        }
+    }, [showModal, showSettings]);
 
     // Find last workout name
     const lastWorkoutName = React.useMemo(() => {
@@ -293,12 +303,12 @@ export default function Home() {
             </div>
 
             {/* Creation Modal */}
-            {showModal && (
+            {showModal && createPortal(
                 <div style={{
                     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    overflowY: 'auto', overflowX: 'hidden', padding: '1rem 1rem 120px 1rem'
                 }}>
-                    <div className="card" style={{ width: '90%', maxWidth: '400px', padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
+                    <div className="card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '400px', boxSizing: 'border-box', padding: '1.5rem', margin: '0 auto' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                             <h2 style={{ margin: 0 }}>{t('new_workout')}</h2>
                             <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)' }}><X /></button>
@@ -342,9 +352,7 @@ export default function Home() {
                                     display: 'grid',
                                     gridTemplateColumns: 'repeat(5, 1fr)',
                                     gap: '0.5rem',
-                                    maxHeight: '150px',
-                                    overflowY: 'auto',
-                                    padding: '4px' // padding for scrollbar
+                                    padding: '4px'
                                 }}>
                                     {Object.keys(ICON_MAP).map(iconName => {
                                         const IconComp = ICON_MAP[iconName];
@@ -376,7 +384,7 @@ export default function Home() {
                         </form>
                     </div>
                 </div>
-            )}
+                , document.body)}
             {/* Settings Modal */}
             <AnimatePresence>
                 {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
