@@ -36,15 +36,15 @@ export default function VolumeChart({ history, currentMonth, currentYear, disabl
                     targetDataMap[target] = new Array(daysInMonth).fill(0);
                 }
 
-                // Calculate Volume (Weight * Reps)
-                const volume = ex.sets.reduce((acc, s) => {
+                // Calculate Total Reps (not volume)
+                const totalReps = ex.sets.reduce((acc, s) => {
                     if (s.completed) {
-                        return acc + ((Number(s.weight) || 0) * (Number(s.reps) || 0));
+                        return acc + (Number(s.reps) || 0);
                     }
                     return acc;
                 }, 0);
 
-                targetDataMap[target][dayIndex] += volume;
+                targetDataMap[target][dayIndex] += totalReps;
             });
         });
 

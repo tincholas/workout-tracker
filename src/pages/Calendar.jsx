@@ -209,7 +209,7 @@ export default function Calendar() {
 
             {hasSetsData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
-                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>{t('daily_volume')} ({preferredUnit})</h3>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>{t('daily_reps', { defaultValue: 'Daily Reps' })}</h3>
                     <VolumeChart history={history} currentMonth={month} currentYear={year} disableAnimation={location.state?.fromSwipe} />
                 </div>
             )}

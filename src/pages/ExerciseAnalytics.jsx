@@ -53,14 +53,20 @@ export default function ExerciseAnalytics() {
                 const seconds = ex.accumulatedSeconds || 0;
                 val = Number((seconds / 60).toFixed(2));
             } else {
-                val = Math.max(...ex.sets.map(s => Number(s.weight) || 0));
+                // Calculate total volume (weight * reps for all completed sets)
+                val = ex.sets.reduce((acc, s) => {
+                    if (s.completed) {
+                        return acc + ((Number(s.weight) || 0) * (Number(s.reps) || 0));
+                    }
+                    return acc;
+                }, 0);
             }
 
-            // If multiple same exercises in one day, take max
+            // If multiple same exercises in one day, sum the volume
             if (!dateValuesMap[dateKey]) dateValuesMap[dateKey] = {};
 
             const currentVal = dateValuesMap[dateKey][ex.name] || 0;
-            dateValuesMap[dateKey][ex.name] = Math.max(currentVal, val);
+            dateValuesMap[dateKey][ex.name] = currentVal + val;
         };
 
         // Filter Relevant Workouts
@@ -130,7 +136,7 @@ export default function ExerciseAnalytics() {
             const isCardio = currentTarget === 'Cardio';
 
             datasets.push({
-                label: isCardio ? t('duration_mins') : t('max_weight'),
+                label: isCardio ? t('duration_mins') : t('total_volume', { defaultValue: 'Total Volume' }),
                 data: dataPoints,
                 borderColor: isCardio ? TARGET_COLORS.Cardio : TARGET_COLORS.Chest, // Default to Red (Chest) for strength
                 backgroundColor: isCardio ? `${TARGET_COLORS.Cardio}80` : `${TARGET_COLORS.Chest}80`, // Add opacity
@@ -144,6 +150,25 @@ export default function ExerciseAnalytics() {
             datasets: datasets
         };
     }, [history, exerciseName, targetGroup, currentTarget, t]);
+
+    // Calculate Min/Max for Y-Axis scaling
+    const yBinding = useMemo(() => {
+        if (!chartData?.datasets?.length) return {};
+
+        const allValues = chartData.datasets
+            .flatMap(d => d.data)
+            .filter(v => typeof v === 'number' && !isNaN(v));
+
+        if (allValues.length === 0) return {};
+
+        const minVal = Math.min(...allValues);
+        const maxVal = Math.max(...allValues);
+
+        return {
+            min: Math.max(0, minVal * 0.8), // Start 20% lower (clamped to 0)
+            max: maxVal * 1.2               // End 20% higher
+        };
+    }, [chartData]);
 
     const options = {
         responsive: true,
@@ -164,7 +189,10 @@ export default function ExerciseAnalytics() {
                 grid: { color: borderSubtle },
                 border: { display: false },
                 ticks: { color: textMuted },
-                beginAtZero: true
+                // Apply dynamic scaling if data is present
+                ...(yBinding.min !== undefined && { min: yBinding.min }),
+                ...(yBinding.max !== undefined && { max: yBinding.max }),
+                beginAtZero: false // Disable forced zero start to respect min
             },
             x: {
                 grid: { color: borderSubtle },
