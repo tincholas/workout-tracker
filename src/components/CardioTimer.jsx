@@ -3,7 +3,7 @@ import { Play, Square, RotateCcw } from 'lucide-react';
 import { useWorkout } from '../store/WorkoutContext';
 
 export default function CardioTimer({ exercise }) {
-    const { updateExercise } = useWorkout();
+    const { updateExercise, notificationPermission, requestNotificationPermission } = useWorkout();
     const [now, setNow] = useState(Date.now());
     const intervalRef = useRef(null);
 
@@ -11,6 +11,7 @@ export default function CardioTimer({ exercise }) {
     const [localInput, setLocalInput] = useState(exercise.targetTimeMinutes || '');
     const [prevInput, setPrevInput] = useState('');
     const [isFocused, setIsFocused] = useState(false);
+    const notifiedRef = useRef(false); // tracks if we've already fired the target notification
 
     // Derived State
     const targetMinutes = Number(exercise.targetTimeMinutes) || 0;
@@ -43,6 +44,27 @@ export default function CardioTimer({ exercise }) {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, [isRunning]);
+
+    // Reset notification gate when timer drops below target (restart / manual reset)
+    useEffect(() => {
+        if (!isTargetMet) notifiedRef.current = false;
+    }, [isTargetMet]);
+
+    // Fire notification once when target is first reached
+    useEffect(() => {
+        if (isTargetMet && targetSeconds > 0 && !notifiedRef.current) {
+            notifiedRef.current = true;
+            if (notificationPermission !== 'granted') {
+                requestNotificationPermission();
+            } else if ('Notification' in window) {
+                new Notification('Target reached! 🎯', {
+                    body: `You've completed your ${targetMinutes} min cardio target!`,
+                    icon: '/bicep.svg',
+                    silent: false,
+                });
+            }
+        }
+    }, [isTargetMet, targetSeconds, targetMinutes, notificationPermission, requestNotificationPermission]);
 
     const handleStart = () => {
         updateExercise(exercise.id, {
