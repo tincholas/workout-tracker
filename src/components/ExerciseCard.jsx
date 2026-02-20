@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 export default function ExerciseCard({ exercise, onSwap, ...props }) {
-    const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise } = useWorkout();
+    const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise, activeWorkout } = useWorkout();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const { t } = useTranslation();
@@ -60,24 +60,32 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         return bestSetId;
     }, [exercise.sets, exercise.name, personalRecords]);
 
-    // --- Exercise-Level PR Logic (Total Volume) ---
-    const isExercisePR = React.useMemo(() => {
-        // Skip cardio - they use duration-based PRs
+    // --- Exercise-Level PR Logic ---
+    // Read sets directly from activeWorkout so we always have the freshest values.
+    const liveSets = activeWorkout?.exercises?.find(e => e.id === exercise.id)?.sets ?? exercise.sets;
+
+    // ACTUAL PR: completed sets already beat the record → yellow border
+    const isActualPR = React.useMemo(() => {
         if (exercise.target === 'Cardio') return false;
+        const best = exercisePRs[exercise.name]?.totalVolume || 0;
+        if (best === 0) return false;
+        const completedVolume = liveSets.reduce((sum, s) =>
+            sum + (s.completed ? (Number(s.weight) || 0) * (Number(s.reps) || 0) : 0), 0);
+        return completedVolume > best;
+    }, [liveSets, exercise.name, exercise.target, exercisePRs]);
 
-        // Calculate current completed volume
-        const currentVolume = exercise.sets.reduce((sum, s) => {
-            return sum + (s.completed ? (s.weight * s.reps) : 0);
+    // POTENTIAL PR: all entered values would beat the record → yellow glow
+    const isPotentialPR = React.useMemo(() => {
+        if (exercise.target === 'Cardio') return false;
+        const best = exercisePRs[exercise.name]?.totalVolume || 0;
+        if (best === 0) return false;
+        const potentialVolume = liveSets.reduce((sum, s) => {
+            const w = Number(s.weight) || 0;
+            const r = Number(s.reps) || 0;
+            return sum + (w > 0 && r > 0 ? w * r : 0);
         }, 0);
-
-        if (currentVolume === 0) return false;
-
-        // Get historical best
-        const historicalBest = exercisePRs[exercise.name]?.totalVolume || 0;
-
-        // Current volume beats historical best
-        return currentVolume > historicalBest;
-    }, [exercise.sets, exercise.name, exercise.target, exercisePRs]);
+        return potentialVolume > best;
+    }, [liveSets, exercise.name, exercise.target, exercisePRs]);
 
     return (
         <motion.div
@@ -90,10 +98,10 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                 padding: '1rem',
                 marginBottom: '1rem',
                 overflow: 'hidden',
-                ...(isExercisePR && {
-                    border: '2px solid #f59e0b',
-                    boxShadow: '0 0 12px rgba(245, 158, 11, 0.3)'
-                })
+                border: isActualPR ? '2px solid #f59e0b' : '2px solid transparent',
+                boxShadow: isPotentialPR
+                    ? '0 0 12px rgba(245, 158, 11, 0.3)'
+                    : 'var(--shadow-convex)',
             }}
             {...props}
         >
