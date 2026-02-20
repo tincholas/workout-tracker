@@ -14,7 +14,7 @@ export default function ExerciseAnalytics() {
     const navigate = useNavigate();
     const exerciseName = searchParams.get('exercise');
     const targetGroup = searchParams.get('target');
-    const { history, renameExercise } = useWorkout();
+    const { history, renameExercise, preferredUnit } = useWorkout();
     const { textMuted, textPrimary, borderSubtle } = useThemeColors();
     const [isEditing, setIsEditing] = React.useState(false);
     const [editName, setEditName] = React.useState(exerciseName || '');
@@ -151,6 +151,53 @@ export default function ExerciseAnalytics() {
         };
     }, [history, exerciseName, targetGroup, currentTarget, t]);
 
+    // Compute PRs for single-exercise view
+    const prs = useMemo(() => {
+        if (!exerciseName || !history) return null;
+        let maxWeight = 0;
+        let maxSetVolume = 0;
+        let bestSetWeight = 0;  // weight of the best set
+        let bestSetReps = 0;    // reps of the best set
+        let maxWorkoutVolume = 0;
+
+        history.forEach(w => {
+            let sessionVolume = 0;
+            w.exercises.forEach(ex => {
+                if (ex.name !== exerciseName) return;
+                ex.sets.forEach(s => {
+                    if (!s.completed) return;
+                    const w = Number(s.weight) || 0;
+                    const r = Number(s.reps) || 0;
+                    if (w > maxWeight) maxWeight = w;
+                    const setVol = w * r;
+                    if (setVol > maxSetVolume) {
+                        maxSetVolume = setVol;
+                        bestSetWeight = w;
+                        bestSetReps = r;
+                    }
+                    sessionVolume += setVol;
+                });
+            });
+            if (sessionVolume > maxWorkoutVolume) maxWorkoutVolume = sessionVolume;
+        });
+
+        if (maxWeight === 0) return null;
+
+        const displayWeight = preferredUnit === 'KG'
+            ? maxWeight
+            : Math.round(maxWeight * 2.20462);
+        const displayBestSetWeight = preferredUnit === 'KG'
+            ? bestSetWeight
+            : Math.round(bestSetWeight * 2.20462);
+
+        return {
+            maxWeight: displayWeight,
+            bestSet: `${bestSetReps} × ${displayBestSetWeight} ${preferredUnit}`,
+            maxWorkoutVolume: Math.round(maxWorkoutVolume),
+            unit: preferredUnit
+        };
+    }, [history, exerciseName, preferredUnit]);
+
     // Calculate Min/Max for Y-Axis scaling
     const yBinding = useMemo(() => {
         if (!chartData?.datasets?.length) return {};
@@ -281,6 +328,22 @@ export default function ExerciseAnalytics() {
                 <h1 style={{ marginBottom: 'var(--space-lg)' }}>
                     {targetGroup} <span style={{ fontSize: '0.5em', color: 'var(--text-muted)' }}>{t('group_analysis')}</span>
                 </h1>
+            )}
+
+            {/* PR Stats — single exercise only */}
+            {prs && !targetGroup && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                    {[
+                        { label: t('pr_max_weight', { defaultValue: 'Max Weight' }), value: `${prs.maxWeight} ${prs.unit}` },
+                        { label: t('pr_max_set_volume', { defaultValue: 'Best Set' }), value: prs.bestSet },
+                        { label: t('pr_max_workout_volume', { defaultValue: 'Best Session' }), value: `${prs.maxWorkoutVolume} KG` },
+                    ].map(({ label, value }) => (
+                        <div key={label} className="card" style={{ padding: '0.75rem', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{label}</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#f59e0b' }}>{value}</div>
+                        </div>
+                    ))}
+                </div>
             )}
 
             <div className="card" style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
