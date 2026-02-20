@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import { MUSCLE_GROUPS } from '../store/models';
@@ -20,6 +20,11 @@ export default function ExerciseAnalytics() {
     const [editName, setEditName] = React.useState(exerciseName || '');
     const { t } = useTranslation();
 
+    // Date window state (null windowSize = show all)
+    const [windowSize, setWindowSize] = React.useState(null);
+    const [windowOffset, setWindowOffset] = React.useState(0);
+    const touchRef = useRef({});
+
     // Find current target from history (only used for single exercise mode)
     const currentTarget = React.useMemo(() => {
         if (targetGroup) return targetGroup; // If viewing a group, that is the target
@@ -38,45 +43,31 @@ export default function ExerciseAnalytics() {
         setEditTarget(currentTarget);
     }, [currentTarget]);
 
-    const chartData = useMemo(() => {
+    // --- Step 1: Collect ALL raw dates + values (no windowing yet) ---
+    const allRawData = useMemo(() => {
         if (!history) return null;
         if (!exerciseName && !targetGroup) return null;
 
-        let datasets = [];
-        let allDates = new Set();
-        const dateValuesMap = {}; // { 'YYYY-MM-DD': { 'Bench Press': 100, 'Push Ups': 20 } }
+        const allDates = new Set();
+        const dateValuesMap = {};
 
-        // Helper to process an exercise
         const processExercise = (ex, dateKey) => {
             let val = 0;
             if (ex.target === 'Cardio') {
-                const seconds = ex.accumulatedSeconds || 0;
-                val = Number((seconds / 60).toFixed(2));
+                val = Number(((ex.accumulatedSeconds || 0) / 60).toFixed(2));
             } else {
-                // Calculate total volume (weight * reps for all completed sets)
-                val = ex.sets.reduce((acc, s) => {
-                    if (s.completed) {
-                        return acc + ((Number(s.weight) || 0) * (Number(s.reps) || 0));
-                    }
-                    return acc;
-                }, 0);
+                val = ex.sets.reduce((acc, s) =>
+                    s.completed ? acc + ((Number(s.weight) || 0) * (Number(s.reps) || 0)) : acc, 0);
             }
-
-            // If multiple same exercises in one day, sum the volume
             if (!dateValuesMap[dateKey]) dateValuesMap[dateKey] = {};
-
-            const currentVal = dateValuesMap[dateKey][ex.name] || 0;
-            dateValuesMap[dateKey][ex.name] = currentVal + val;
+            dateValuesMap[dateKey][ex.name] = (dateValuesMap[dateKey][ex.name] || 0) + val;
         };
 
-        // Filter Relevant Workouts
-        const relevantWorkouts = history.filter(w => {
-            if (targetGroup) {
-                return w.exercises.some(ex => ex.target === targetGroup);
-            } else {
-                return w.exercises.some(ex => ex.name === exerciseName);
-            }
-        });
+        const relevantWorkouts = history.filter(w =>
+            targetGroup
+                ? w.exercises.some(ex => ex.target === targetGroup)
+                : w.exercises.some(ex => ex.name === exerciseName)
+        );
 
         if (relevantWorkouts.length === 0) return null;
 
@@ -84,72 +75,106 @@ export default function ExerciseAnalytics() {
             const d = new Date(w.startTime);
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             allDates.add(key);
-
             w.exercises.forEach(ex => {
-                if (targetGroup) {
-                    if (ex.target === targetGroup) {
-                        processExercise(ex, key);
-                    }
-                } else {
-                    if (ex.name === exerciseName) {
-                        processExercise(ex, key);
-                    }
-                }
+                if (targetGroup ? ex.target === targetGroup : ex.name === exerciseName)
+                    processExercise(ex, key);
             });
         });
 
-        const sortedKeys = Array.from(allDates).sort();
-        const labels = sortedKeys.map(k => {
-            const [y, m, d] = k.split('-');
-            return `${d}/${m}`;
-        });
+        return { sortedKeys: Array.from(allDates).sort(), dateValuesMap };
+    }, [history, exerciseName, targetGroup]);
 
-        // Generate Datasets
+    // Total dates available (for pinch scaling)
+    const totalDates = allRawData?.sortedKeys?.length ?? 0;
+
+    // --- Step 2: Apply window slice and build chart object ---
+    const chartData = useMemo(() => {
+        if (!allRawData) return null;
+        const { sortedKeys, dateValuesMap } = allRawData;
+
+        const effectiveSize = windowSize ?? sortedKeys.length;
+        const clampedOffset = Math.max(0, Math.min(windowOffset, sortedKeys.length - effectiveSize));
+        const visibleKeys = sortedKeys.slice(clampedOffset, clampedOffset + effectiveSize);
+
+        const labels = visibleKeys.map(k => { const [, m, d] = k.split('-'); return `${d}/${m}`; });
+        let datasets = [];
+
         if (targetGroup) {
-            // Find all unique exercise names in this group
             const uniqueNames = new Set();
-            Object.values(dateValuesMap).forEach(dayMap => {
-                Object.keys(dayMap).forEach(name => uniqueNames.add(name));
-            });
+            Object.values(dateValuesMap).forEach(dayMap => Object.keys(dayMap).forEach(n => uniqueNames.add(n)));
 
             Array.from(uniqueNames).forEach((name, index) => {
-                const dataPoints = sortedKeys.map(k => dateValuesMap[k]?.[name] || null); // Use null for gaps
-
-                // Color Generation
-                const hue = (index * 137.508) % 360; // Golden angle approximation for distinct colors
-                const color = `hsl(${hue}, 70%, 50%)`;
-
+                const color = `hsl(${(index * 137.508) % 360}, 70%, 50%)`;
                 datasets.push({
                     label: name,
-                    data: dataPoints,
-                    borderColor: color,
-                    backgroundColor: color,
-                    tension: 0.3,
-                    pointRadius: 4,
-                    spanGaps: true
+                    data: visibleKeys.map(k => dateValuesMap[k]?.[name] || null),
+                    borderColor: color, backgroundColor: color,
+                    tension: 0.3, pointRadius: 4, spanGaps: true
                 });
             });
-
         } else {
-            // Single Exercise
-            const dataPoints = sortedKeys.map(k => dateValuesMap[k]?.[exerciseName] || 0);
             const isCardio = currentTarget === 'Cardio';
-
             datasets.push({
                 label: isCardio ? t('duration_mins') : t('total_volume', { defaultValue: 'Total Volume' }),
-                data: dataPoints,
-                borderColor: isCardio ? TARGET_COLORS.Cardio : TARGET_COLORS.Chest, // Default to Red (Chest) for strength
-                backgroundColor: isCardio ? `${TARGET_COLORS.Cardio}80` : `${TARGET_COLORS.Chest}80`, // Add opacity
-                tension: 0.3,
-                pointRadius: 4,
+                data: visibleKeys.map(k => dateValuesMap[k]?.[exerciseName] || 0),
+                borderColor: isCardio ? TARGET_COLORS.Cardio : TARGET_COLORS.Chest,
+                backgroundColor: isCardio ? `${TARGET_COLORS.Cardio}80` : `${TARGET_COLORS.Chest}80`,
+                tension: 0.3, pointRadius: 4,
             });
         }
 
-        return {
-            labels,
-            datasets: datasets
-        };
-    }, [history, exerciseName, targetGroup, currentTarget, t]);
+        return { labels, datasets };
+    }, [allRawData, windowSize, windowOffset, targetGroup, exerciseName, currentTarget, t]);
+
+    // --- Gesture handlers for the chart ---
+    const handleChartTouchStart = (e) => {
+        if (e.touches.length === 2) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            touchRef.current = {
+                mode: 'pinch',
+                initialDist: Math.sqrt(dx * dx + dy * dy),
+                initialWindowSize: windowSize ?? totalDates,
+                initialOffset: windowOffset,
+            };
+        } else if (e.touches.length === 1 && windowSize !== null) {
+            touchRef.current = {
+                mode: 'pan',
+                startX: e.touches[0].clientX,
+                initialOffset: windowOffset,
+            };
+        }
+    };
+
+    const handleChartTouchMove = (e) => {
+        const t = touchRef.current;
+        if (t.mode === 'pinch' && e.touches.length === 2) {
+            e.preventDefault();
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            // pinch in (dist shrinks) → scale > 1 → fewer dates
+            const scale = t.initialDist / dist;
+            const newSize = Math.max(2, Math.min(totalDates, Math.round(t.initialWindowSize * scale)));
+            const isFullView = newSize >= totalDates;
+            setWindowSize(isFullView ? null : newSize);
+            if (!isFullView) {
+                setWindowOffset(prev => Math.max(0, Math.min(totalDates - newSize, prev)));
+            } else {
+                setWindowOffset(0);
+            }
+        } else if (t.mode === 'pan' && e.touches.length === 1 && windowSize !== null) {
+            const deltaX = e.touches[0].clientX - t.startX;
+            // negative deltaX (drag left) = move window forward in time
+            const datesPerPx = windowSize / 250;
+            const dateDelta = -Math.round(deltaX * datesPerPx);
+            const newOffset = Math.max(0, Math.min(totalDates - windowSize, t.initialOffset + dateDelta));
+            setWindowOffset(newOffset);
+        }
+    };
+
+    const handleChartTouchEnd = () => { touchRef.current = {}; };
+
 
     // Compute PRs for single-exercise view
     const prs = useMemo(() => {
@@ -346,13 +371,24 @@ export default function ExerciseAnalytics() {
                 </div>
             )}
 
-            <div className="card" style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+                className="card"
+                style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'pan-y' }}
+                onTouchStart={handleChartTouchStart}
+                onTouchMove={handleChartTouchMove}
+                onTouchEnd={handleChartTouchEnd}
+            >
                 {chartData ? (
                     <Line options={options} data={chartData} />
                 ) : (
                     <p style={{ color: 'var(--text-muted)' }}>{t('no_data_recorded')}</p>
                 )}
             </div>
+            {chartData && (
+                <p style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                    {windowSize ? `${windowSize} of ${totalDates} sessions · drag to pan` : 'Pinch to zoom · drag to pan'}
+                </p>
+            )}
         </div>
     );
 }
