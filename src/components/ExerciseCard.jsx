@@ -205,6 +205,8 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                             {exercise.sets.map((set, index) => (
                                 <motion.div
                                     key={set.id}
+                                    data-set-id={set.id}
+                                    data-set-completed={set.completed ? 'true' : 'false'}
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0, marginBottom: 0 }}

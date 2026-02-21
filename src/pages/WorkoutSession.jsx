@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useWorkout } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
@@ -10,9 +10,23 @@ import { useTranslation } from 'react-i18next';
 import { EXERCISE_TYPES } from '../store/models';
 
 export default function WorkoutSession() {
-    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise } = useWorkout();
+    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise, cancelRestTimer } = useWorkout();
     const navigate = useNavigate();
     const { t } = useTranslation();
+
+    // Scroll to last completed set on mount
+    useEffect(() => {
+        if (!activeWorkout) return;
+        // Small delay to let ExerciseCard components render their sets into the DOM
+        const timer = setTimeout(() => {
+            const completedSets = document.querySelectorAll('[data-set-completed="true"]');
+            if (completedSets.length > 0) {
+                const lastCompleted = completedSets[completedSets.length - 1];
+                lastCompleted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, []); // Only on mount
 
     // Modal State
     const [pickerMode, setPickerMode] = useState(null); // 'ADD' or 'SWAP'
@@ -41,6 +55,7 @@ export default function WorkoutSession() {
 
     const handleFinish = () => {
         if (confirm(t('confirm_finish'))) {
+            cancelRestTimer();
             completeWorkout();
             navigate('/completed');
         }
