@@ -5,9 +5,9 @@ import { EXERCISE_TYPES } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import {
-    Dumbbell, Anchor, Move, Footprints, Shirt, BicepsFlexed, User, Plus, Star, X, Trash2, Settings, History,
+    Dumbbell, Anchor, Move, Footprints, Shirt, BicepsFlexed, User, Plus, Star, X, Settings, History,
     Heart, Activity, Flame, Zap, Timer, Trophy, Medal, Crown, Target, Swords, Bike, Waves, Mountain,
-    Brain, Smile, Ghost, Sun, Moon
+    Brain, Smile, Ghost, Sun, Moon, MoreVertical, ChevronUp, ChevronDown, Trash2, Pencil
 } from 'lucide-react';
 import SettingsModal from '../components/SettingsModal';
 import { useTranslation } from 'react-i18next';
@@ -49,14 +49,16 @@ const ICON_MAP = {
 const COLORS = ['#ef4444', '#3b82f6', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#f97316', '#64748b'];
 
 export default function Home() {
-    const { startWorkout, activeWorkout, extraTypes, createCustomType, deleteCustomType, history } = useWorkoutContext();
+    const { startWorkout, activeWorkout, extraTypes, createCustomType, deleteCustomType, editCustomType, moveType, history } = useWorkoutContext();
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
+    const [editingWorkout, setEditingWorkout] = useState(null); // null = create mode, object = edit mode
     const [showSettings, setShowSettings] = useState(false);
     const [newWorkoutName, setNewWorkoutName] = useState('');
     const [selectedColor, setSelectedColor] = useState(COLORS[4]);
     const [selectedIcon, setSelectedIcon] = useState('Star');
-    const [isStarting, setIsStarting] = useState(false); // Prevents flicker during transition
+    const [isStarting, setIsStarting] = useState(false);
+    const [openMenuId, setOpenMenuId] = useState(null); // id of split whose menu is open
     const { t } = useTranslation();
 
     // Lock body scroll when any modal is open
@@ -67,6 +69,14 @@ export default function Home() {
             return () => { document.body.style.overflow = prev; };
         }
     }, [showModal, showSettings]);
+
+    // Close context menu on outside click
+    useEffect(() => {
+        if (!openMenuId) return;
+        const close = () => setOpenMenuId(null);
+        document.addEventListener('click', close);
+        return () => document.removeEventListener('click', close);
+    }, [openMenuId]);
 
     // Find last workout name
     const lastWorkoutName = React.useMemo(() => {
@@ -82,11 +92,32 @@ export default function Home() {
         navigate('/session');
     };
 
+    const openCreateModal = () => {
+        setEditingWorkout(null);
+        setNewWorkoutName('');
+        setSelectedColor(COLORS[4]);
+        setSelectedIcon('Star');
+        setShowModal(true);
+    };
+
+    const openEditModal = (workoutDef) => {
+        setEditingWorkout(workoutDef);
+        setNewWorkoutName(workoutDef.name);
+        setSelectedColor(workoutDef.color);
+        setSelectedIcon(workoutDef.icon || 'Star');
+        setShowModal(true);
+    };
+
     const handleCreate = (e) => {
         e.preventDefault();
         if (!newWorkoutName) return;
-        createCustomType(newWorkoutName, selectedColor, selectedIcon);
+        if (editingWorkout) {
+            editCustomType(editingWorkout.id, newWorkoutName, selectedColor, selectedIcon);
+        } else {
+            createCustomType(newWorkoutName, selectedColor, selectedIcon);
+        }
         setShowModal(false);
+        setEditingWorkout(null);
         setNewWorkoutName('');
         setSelectedIcon('Star');
     };
@@ -200,27 +231,94 @@ export default function Home() {
                                     </div>
                                 )}
                             </div>
+                            {/* '...' context menu button */}
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm(t('confirm_delete_split', { name: resolveSplitName(workoutDef) }))) {
-                                        deleteCustomType(workoutDef.id);
-                                    }
+                                    setOpenMenuId(openMenuId === workoutDef.id ? null : workoutDef.id);
                                 }}
                                 style={{
                                     position: 'absolute',
-                                    right: '1rem',
+                                    right: '0.75rem',
                                     top: '50%',
                                     transform: 'translateY(-50%)',
                                     background: 'transparent',
                                     border: 'none',
-                                    color: '#ef4444',
+                                    color: 'var(--text-muted)',
                                     cursor: 'pointer',
-                                    padding: '0.5rem'
+                                    padding: '0.5rem',
+                                    borderRadius: '8px',
+                                    lineHeight: 0
                                 }}
                             >
-                                <Trash2 size={20} />
+                                <MoreVertical size={20} />
                             </button>
+
+                            {/* Dropdown menu */}
+                            {openMenuId === workoutDef.id && (
+                                <div
+                                    onClick={e => e.stopPropagation()}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '3rem',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: 'var(--bg-card)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '10px',
+                                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                        zIndex: 50,
+                                        minWidth: '140px',
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    {[{
+                                        icon: <Pencil size={14} />,
+                                        label: t('edit'),
+                                        onClick: () => { openEditModal(workoutDef); setOpenMenuId(null); }
+                                    }, {
+                                        icon: <ChevronUp size={14} />,
+                                        label: t('move_up'),
+                                        onClick: () => { moveType(workoutDef.id, 'up'); setOpenMenuId(null); }
+                                    }, {
+                                        icon: <ChevronDown size={14} />,
+                                        label: t('move_down'),
+                                        onClick: () => { moveType(workoutDef.id, 'down'); setOpenMenuId(null); }
+                                    }, {
+                                        icon: <Trash2 size={14} />,
+                                        label: t('remove'),
+                                        danger: true,
+                                        onClick: () => {
+                                            setOpenMenuId(null);
+                                            if (window.confirm(t('confirm_delete_split', { name: resolveSplitName(workoutDef) }))) {
+                                                deleteCustomType(workoutDef.id);
+                                            }
+                                        }
+                                    }].map(({ icon, label, onClick, danger }) => (
+                                        <button
+                                            key={label}
+                                            onClick={onClick}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                width: '100%',
+                                                padding: '0.65rem 1rem',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: danger ? '#ef4444' : 'var(--text-primary)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.9rem',
+                                                textAlign: 'left'
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            {icon}{label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     );
                 })}
@@ -230,8 +328,8 @@ export default function Home() {
                     className="card"
                     role="button"
                     tabIndex={0}
-                    onClick={() => setShowModal(true)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowModal(true); } }}
+                    onClick={() => openCreateModal()}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCreateModal(); } }}
                     style={{
                         padding: '1.5rem',
                         border: '2px dashed var(--text-muted)',
@@ -259,8 +357,8 @@ export default function Home() {
                 }}>
                     <div className="card" onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '400px', boxSizing: 'border-box', padding: '1.5rem', margin: '0 auto' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                            <h2 style={{ margin: 0 }}>{t('new_workout')}</h2>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)' }}><X /></button>
+                            <h2 style={{ margin: 0 }}>{editingWorkout ? t('edit') : t('new_workout')}</h2>
+                            <button onClick={() => { setShowModal(false); setEditingWorkout(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-primary)' }}><X /></button>
                         </div>
 
                         <form onSubmit={handleCreate}>
@@ -329,7 +427,9 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>{t('create')}</button>
+                            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+                                {editingWorkout ? t('save') : t('create')}
+                            </button>
                         </form>
                     </div>
                 </div>

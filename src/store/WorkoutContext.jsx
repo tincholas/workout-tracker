@@ -257,6 +257,23 @@ export const WorkoutProvider = ({ children }) => {
         setExtraTypes(extraTypes.filter(t => t.id !== id));
     };
 
+    const editCustomType = (id, name, color, icon) => {
+        setExtraTypes(extraTypes.map(t =>
+            // eslint-disable-next-line no-unused-vars
+            t.id === id ? { ...t, name, color, icon, i18nKey: undefined } : t
+        ));
+    };
+
+    const moveType = (id, direction) => {
+        const idx = extraTypes.findIndex(t => t.id === id);
+        if (idx === -1) return;
+        const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+        if (newIdx < 0 || newIdx >= extraTypes.length) return;
+        const updated = [...extraTypes];
+        [updated[idx], updated[newIdx]] = [updated[newIdx], updated[idx]];
+        setExtraTypes(updated);
+    };
+
     const startWorkout = (workoutDef) => {
         const { id: splitId, name, template } = workoutDef;
         let workout = createWorkout(name, name);
@@ -596,6 +613,8 @@ export const WorkoutProvider = ({ children }) => {
             extraTypes,
             createCustomType,
             deleteCustomType,
+            editCustomType,
+            moveType,
             updateExercise,
             restTimer,
             setRestTimer,
