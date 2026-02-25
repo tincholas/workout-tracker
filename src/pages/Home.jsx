@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence } from 'framer-motion';
 import { EXERCISE_TYPES } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import {
-    Dumbbell, Anchor, Move, Footprints, Shirt, BicepsFlexed, User, Plus, Star, X, Settings, History,
+    Dumbbell, Anchor, Move, Footprints, Shirt, BicepsFlexed, User, Plus, Star, X, History,
     Heart, Activity, Flame, Zap, Timer, Trophy, Medal, Crown, Target, Swords, Bike, Waves, Mountain,
     Brain, Smile, Ghost, Sun, Moon, MoreVertical, ChevronUp, ChevronDown, Trash2, Pencil
 } from 'lucide-react';
-import SettingsModal from '../components/SettingsModal';
 import { useTranslation } from 'react-i18next';
 
 // Icon Registry - Mapping names to Components
@@ -52,23 +50,22 @@ export default function Home() {
     const { startWorkout, activeWorkout, extraTypes, createCustomType, deleteCustomType, editCustomType, moveType, history } = useWorkoutContext();
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
-    const [editingWorkout, setEditingWorkout] = useState(null); // null = create mode, object = edit mode
-    const [showSettings, setShowSettings] = useState(false);
+    const [editingWorkout, setEditingWorkout] = useState(null);
     const [newWorkoutName, setNewWorkoutName] = useState('');
     const [selectedColor, setSelectedColor] = useState(COLORS[4]);
     const [selectedIcon, setSelectedIcon] = useState('Star');
     const [isStarting, setIsStarting] = useState(false);
-    const [openMenuId, setOpenMenuId] = useState(null); // id of split whose menu is open
+    const [openMenuId, setOpenMenuId] = useState(null);
     const { t } = useTranslation();
 
     // Lock body scroll when any modal is open
     useEffect(() => {
-        if (showModal || showSettings) {
+        if (showModal) {
             const prev = document.body.style.overflow;
             document.body.style.overflow = 'hidden';
             return () => { document.body.style.overflow = prev; };
         }
-    }, [showModal, showSettings]);
+    }, [showModal]);
 
     // Close context menu on outside click
     useEffect(() => {
@@ -147,22 +144,7 @@ export default function Home() {
             minHeight: '100vh',
             boxSizing: 'border-box'
         }}>
-            <header style={{ marginBottom: '2rem', textAlign: 'center', color: 'var(--text-primary)', position: 'relative' }}>
-                <button
-                    onClick={() => setShowSettings(true)}
-                    style={{
-                        position: 'absolute',
-                        right: 0,
-                        top: 0,
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer',
-                        padding: '0.5rem'
-                    }}
-                >
-                    <Settings size={24} />
-                </button>
+            <header style={{ marginBottom: '2rem', textAlign: 'center', color: 'var(--text-primary)' }}>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1px', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                     {t('app_title')}
                 </h1>
@@ -434,10 +416,6 @@ export default function Home() {
                     </div>
                 </div>
                 , document.body)}
-            {/* Settings Modal */}
-            <AnimatePresence>
-                {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-            </AnimatePresence>
         </div>
     );
 }

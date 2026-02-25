@@ -167,5 +167,9 @@
         "Reverse Flies": "Vuelos Invertidos",
         "Kickbacks": "Patada de Glúteo (Máquina/Cable)",
         "Leg Extensions": "Extensiones de Cuádriceps"
-    }
+    },
+    "pr_streak": "Racha de Mejora",
+    "workouts_this_month": "Entrenamientos Este Mes",
+    "workouts_this_year": "Entrenamientos Este Año",
+    "avg_per_month": "Promedio / Mes"
 }

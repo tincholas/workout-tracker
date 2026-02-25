@@ -56,7 +56,7 @@
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     /* Colors - Neumorphic Light Mode */
     --bg-app: #e4ebf5;
     --bg-card: #e4ebf5;
@@ -83,6 +83,37 @@
 
     --border-subtle: rgba(0, 0, 0, 0.03);
   }
+}
+
+/* Manual theme overrides — take priority over system preference */
+:root[data-theme="light"] {
+  --bg-app: #e4ebf5;
+  --bg-card: #e4ebf5;
+  --bg-input: #e4ebf5;
+  --shadow-light: #ffffff;
+  --shadow-dark: #c8d0e7;
+  --bg-overlay: rgba(228, 235, 245, 0.9);
+  --color-primary: #8b5cf6;
+  --color-primary-glow: rgba(139, 92, 246, 0.4);
+  --text-primary: #334155;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-subtle: rgba(0, 0, 0, 0.03);
+}
+
+:root[data-theme="dark"] {
+  --bg-app: #2e323b;
+  --bg-card: #2e323b;
+  --bg-input: #2e323b;
+  --shadow-light: rgba(255, 255, 255, 0.08);
+  --shadow-dark: rgba(0, 0, 0, 0.5);
+  --bg-overlay: rgba(0, 0, 0, 0.85);
+  --color-primary: #3b82f6;
+  --color-primary-glow: rgba(59, 130, 246, 0.4);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-subtle: rgba(255, 255, 255, 0.05);
 }
 
 body {

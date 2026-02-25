@@ -4,6 +4,7 @@ import WorkoutSession from './pages/WorkoutSession';
 import WorkoutComplete from './pages/WorkoutComplete';
 import HistoryHub from './pages/HistoryHub';
 import ExerciseAnalytics from './pages/ExerciseAnalytics';
+import Profile from './pages/Profile';
 import { Dumbbell, LineChart, User } from 'lucide-react';
 import { useWorkout } from './store/WorkoutContext';
 
@@ -27,6 +28,8 @@ function App() {
                 <GestureLayout
                   leftPage={<HistoryHub />}
                   leftPath="/history"
+                  rightPage={<Profile />}
+                  rightPath="/profile"
                 >
                   <Home />
                 </GestureLayout>
@@ -45,6 +48,16 @@ function App() {
             } />
             <Route path="/completed" element={<PageTransition><WorkoutComplete /></PageTransition>} />
             <Route path="/analytics" element={<PageTransition><ExerciseAnalytics /></PageTransition>} />
+            <Route path="/profile" element={
+              <PageTransition>
+                <GestureLayout
+                  leftPage={<Home />}
+                  leftPath="/"
+                >
+                  <Profile />
+                </GestureLayout>
+              </PageTransition>
+            } />
           </Routes>
         </AnimatePresence>
       </main>
@@ -91,15 +104,13 @@ function App() {
           <Dumbbell size={28} strokeWidth={2.5} />
         </Link>
 
-        {/* Profile placeholder — to be implemented */}
-        <div style={{
-          color: 'var(--text-muted)',
+        <Link to="/profile" style={{
+          color: location.pathname === '/profile' ? 'var(--color-primary)' : 'var(--text-muted)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-          opacity: 0.4,
-          cursor: 'default'
+          textShadow: location.pathname === '/profile' ? '0 0 10px var(--color-primary-glow)' : 'none'
         }}>
           <User size={26} />
-        </div>
+        </Link>
       </nav>
     </div>
   )

@@ -166,5 +166,9 @@
         "Reverse Flies": "Reverse Flies",
         "Kickbacks": "Kickbacks",
         "Leg Extensions": "Leg Extensions"
-    }
+    },
+    "pr_streak": "PR Streak",
+    "workouts_this_month": "Workouts This Month",
+    "workouts_this_year": "Workouts This Year",
+    "avg_per_month": "Avg / Month"
 }
