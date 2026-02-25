@@ -7,7 +7,7 @@ import { shareWorkout } from '../utils/shareWorkout';
 import { ChevronLeft, ChevronRight, X, Share2, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export default function Calendar() {
+export default function Calendar({ embedded = false }) {
     const { history, preferredUnit, extraTypes, personalRecords, exercisePRs } = useWorkout();
     const location = useLocation();
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -178,13 +178,12 @@ export default function Calendar() {
         return { hasSetsData: hasSets, hasCardioData: hasCardio };
     }, [history, month, year]);
 
-    return (
+    const inner = (
         <div
             style={{
                 padding: 'var(--space-md)',
-                backgroundColor: 'var(--bg-app)',
-                minHeight: '100vh',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                ...(embedded ? {} : { backgroundColor: 'var(--bg-app)', minHeight: '100vh' })
             }}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
@@ -315,4 +314,6 @@ export default function Calendar() {
             )}
         </div>
     );
+
+    return inner;
 }

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export default function ExerciseHistory() {
+export default function ExerciseHistory({ embedded = false }) {
     const { history } = useWorkoutContext();
     const navigate = useNavigate();
     const { t } = useTranslation();
@@ -38,15 +38,14 @@ export default function ExerciseHistory() {
 
     const targets = Object.keys(exercisesByTarget).sort();
 
-    return (
+    const content = (
         <div style={{
             padding: 'var(--space-md)',
-            paddingBottom: '8rem', // Ensure last item is not hidden by navbar
-            backgroundColor: 'var(--bg-app)',
-            minHeight: '100vh',
-            boxSizing: 'border-box'
+            paddingBottom: '8rem',
+            boxSizing: 'border-box',
+            ...(embedded ? {} : { backgroundColor: 'var(--bg-app)', minHeight: '100vh' })
         }}>
-            <h1 style={{ marginBottom: 'var(--space-md)' }}>{t('exercise_history')}</h1>
+            {!embedded && <h1 style={{ marginBottom: 'var(--space-md)' }}>{t('exercise_history')}</h1>}
 
             <div style={{ display: 'grid', gap: '1.5rem' }}>
                 {targets.map(target => (
@@ -92,4 +91,6 @@ export default function ExerciseHistory() {
             </div>
         </div>
     );
+
+    return content;
 }

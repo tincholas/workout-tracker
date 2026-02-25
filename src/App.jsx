@@ -2,10 +2,9 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import WorkoutSession from './pages/WorkoutSession';
 import WorkoutComplete from './pages/WorkoutComplete';
-import ExerciseHistory from './pages/ExerciseHistory';
+import HistoryHub from './pages/HistoryHub';
 import ExerciseAnalytics from './pages/ExerciseAnalytics';
-import Calendar from './pages/Calendar';
-import { Dumbbell, Calendar as CalendarIcon, LineChart } from 'lucide-react';
+import { Dumbbell, LineChart, User } from 'lucide-react';
 import { useWorkout } from './store/WorkoutContext';
 
 import { AnimatePresence } from 'framer-motion';
@@ -26,10 +25,8 @@ function App() {
             <Route path="/" element={
               <PageTransition>
                 <GestureLayout
-                  leftPage={<Calendar />}
-                  leftPath="/calendar"
-                  rightPage={<ExerciseHistory />}
-                  rightPath="/history"
+                  leftPage={<HistoryHub />}
+                  leftPath="/history"
                 >
                   <Home />
                 </GestureLayout>
@@ -39,25 +36,15 @@ function App() {
             <Route path="/history" element={
               <PageTransition>
                 <GestureLayout
-                  leftPage={<Home />}
-                  leftPath="/"
+                  rightPage={<Home />}
+                  rightPath="/"
                 >
-                  <ExerciseHistory />
+                  <HistoryHub />
                 </GestureLayout>
               </PageTransition>
             } />
             <Route path="/completed" element={<PageTransition><WorkoutComplete /></PageTransition>} />
             <Route path="/analytics" element={<PageTransition><ExerciseAnalytics /></PageTransition>} />
-            <Route path="/calendar" element={
-              <PageTransition>
-                <GestureLayout
-                  rightPage={<Home />}
-                  rightPath="/"
-                >
-                  <Calendar />
-                </GestureLayout>
-              </PageTransition>
-            } />
           </Routes>
         </AnimatePresence>
       </main>
@@ -77,12 +64,12 @@ function App() {
         height: '76px', // Slightly taller for the floating button
         zIndex: 100
       }}>
-        <Link to="/calendar" style={{
-          color: location.pathname === '/calendar' ? 'var(--color-primary)' : 'var(--text-muted)',
+        <Link to="/history" style={{
+          color: location.pathname === '/history' ? 'var(--color-primary)' : 'var(--text-muted)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-          textShadow: location.pathname === '/calendar' ? '0 0 10px var(--color-primary-glow)' : 'none'
+          textShadow: location.pathname === '/history' ? '0 0 10px var(--color-primary-glow)' : 'none'
         }}>
-          <CalendarIcon size={26} />
+          <LineChart size={26} />
         </Link>
 
         {/* Floating Action Button */}
@@ -97,19 +84,22 @@ function App() {
           justifyContent: 'center',
           marginTop: '-32px',
           boxShadow: (location.pathname === '/' || location.pathname === '/session')
-            ? '6px 6px 12px rgba(0,0,0,0.4), -4px -4px 10px rgba(255,255,255,0.1)' // Neumorphic Pop
+            ? '6px 6px 12px rgba(0,0,0,0.4), -4px -4px 10px rgba(255,255,255,0.1)'
             : 'var(--shadow-convex)',
-          border: '4px solid var(--bg-app)' // Matches background to create "cutout" effect
+          border: '4px solid var(--bg-app)'
         }}>
           <Dumbbell size={28} strokeWidth={2.5} />
         </Link>
 
-        <Link to="/history" style={{
-          color: location.pathname === '/history' ? 'var(--color-primary)' : 'var(--text-muted)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center'
+        {/* Profile placeholder — to be implemented */}
+        <div style={{
+          color: 'var(--text-muted)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          opacity: 0.4,
+          cursor: 'default'
         }}>
-          <LineChart size={26} />
-        </Link>
+          <User size={26} />
+        </div>
       </nav>
     </div>
   )
