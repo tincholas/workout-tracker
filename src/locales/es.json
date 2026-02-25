@@ -79,6 +79,19 @@
         "LEGS": "Piernas",
         "CUSTOM": "Personalizado"
     },
+    "common_splits": {
+        "CHEST_TRICEPS": "Pecho y Tríceps",
+        "BACK_BICEPS": "Espalda y Bíceps",
+        "SHOULDERS": "Hombros",
+        "LEGS": "Piernas",
+        "PUSH": "Empuje",
+        "PULL": "Jalón",
+        "FULL_BODY": "Cuerpo Completo",
+        "UPPER_BODY": "Tren Superior",
+        "LOWER_BODY": "Tren Inferior",
+        "ARMS": "Brazos",
+        "CORE": "Core"
+    },
     "months": [
         "Enero",
         "Febrero",

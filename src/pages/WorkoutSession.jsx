@@ -7,10 +7,9 @@ import ExercisePickerModal from '../components/ExercisePickerModal';
 import { Plus, Save, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { EXERCISE_TYPES } from '../store/models';
 
 export default function WorkoutSession() {
-    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise, cancelRestTimer } = useWorkout();
+    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise, cancelRestTimer, extraTypes } = useWorkout();
     const navigate = useNavigate();
     const { t } = useTranslation();
 
@@ -32,17 +31,15 @@ export default function WorkoutSession() {
     const [pickerMode, setPickerMode] = useState(null); // 'ADD' or 'SWAP'
     const [swapTargetId, setSwapTargetId] = useState(null);
 
-    // Resolve Display Name
+    // Resolve Display Name: use i18nKey translation if the split is a known type, else use stored name
     const displayName = React.useMemo(() => {
         if (!activeWorkout) return '';
-        // Find if the active workout type matches a standard split key
-        const splitKey = Object.keys(EXERCISE_TYPES).find(key => EXERCISE_TYPES[key] === activeWorkout.type);
-
-        if (splitKey && splitKey !== 'CUSTOM') {
-            return t(`splits.${splitKey}`);
+        const splitDef = extraTypes.find(t => t.id === activeWorkout.splitId);
+        if (splitDef?.i18nKey) {
+            return t(`common_splits.${splitDef.i18nKey}`, { defaultValue: splitDef.name });
         }
         return activeWorkout.name;
-    }, [activeWorkout, t]);
+    }, [activeWorkout, extraTypes, t]);
 
     if (!activeWorkout) {
         return (

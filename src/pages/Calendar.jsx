@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
-import { SPLIT_COLORS } from '../store/models';
 import VolumeChart from '../components/VolumeChart';
 import CardioChart from '../components/CardioChart';
 import { shareWorkout } from '../utils/shareWorkout';
@@ -26,19 +25,20 @@ export default function Calendar() {
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
 
-    // Helper to get workout color
+    // Helper to get workout color — always resolved live from extraTypes so edits are reflected.
     const getWorkoutColor = (workout) => {
-        // 1. Check if it's a known Standard Type (and not Custom)
-        if (SPLIT_COLORS[workout.type] && workout.type !== 'Custom') {
-            return SPLIT_COLORS[workout.type];
+        // 1. Match by stable splitId (new records)
+        if (workout.splitId) {
+            const split = extraTypes.find(t => t.id === workout.splitId);
+            if (split) return split.color;
         }
 
-        // 2. If it's Custom (or unknown), check extraTypes for a name match
-        const customType = extraTypes.find(t => t.name === workout.name);
-        if (customType) return customType.color;
+        // 2. Fallback: match by name for legacy records without a splitId
+        const byName = extraTypes.find(t => t.name === workout.name);
+        if (byName) return byName.color;
 
-        // 3. Fallback
-        return SPLIT_COLORS['Custom'] || '#a3a3a3';
+        // 3. Unknown / deleted split — show gray
+        return '#a3a3a3';
     };
 
     // Map workouts to dates

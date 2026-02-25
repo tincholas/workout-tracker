@@ -79,6 +79,19 @@
         "LEGS": "Legs",
         "CUSTOM": "Custom"
     },
+    "common_splits": {
+        "CHEST_TRICEPS": "Chest & Triceps",
+        "BACK_BICEPS": "Back & Biceps",
+        "SHOULDERS": "Shoulders",
+        "LEGS": "Legs",
+        "PUSH": "Push",
+        "PULL": "Pull",
+        "FULL_BODY": "Full Body",
+        "UPPER_BODY": "Upper Body",
+        "LOWER_BODY": "Lower Body",
+        "ARMS": "Arms",
+        "CORE": "Core"
+    },
     "months": [
         "January",
         "February",

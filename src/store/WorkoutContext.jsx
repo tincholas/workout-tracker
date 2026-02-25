@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE } from './models';
+import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE, DEFAULT_WORKOUT_TYPES } from './models';
 import { initDB, getData, setData } from './db';
 import { usePersonalRecords } from './hooks/usePersonalRecords';
 import { useRestTimer } from './hooks/useRestTimer';
@@ -51,134 +51,157 @@ export const WorkoutProvider = ({ children }) => {
                 const savedUnit = await getData('workout_unit_preference');
                 const savedTimer = await getData('workout_rest_timer');
 
-                if (savedHistory) setHistory(savedHistory);
+                // Resolve initialTypes:
+                // - Fresh install (null/empty)      → seed with all 4 defaults
+                // - Pre-update existing install      → none of the saved types have a built-in ID,
+                //                                     so prepend defaults in front of the custom ones
+                // - Post-update existing install     → at least one built-in ID present; trust saved state
+                //                                     (respects any defaults the user may have deleted)
+                const hasBuiltIn = savedTypes && savedTypes.some(t =>
+                    DEFAULT_WORKOUT_TYPES.some(d => d.id === t.id)
+                );
+                let initialTypes;
+                let typesNeedPersist = false;
+                if (!savedTypes || savedTypes.length === 0) {
+                    // Fresh install
+                    initialTypes = DEFAULT_WORKOUT_TYPES;
+                } else if (!hasBuiltIn) {
+                    // Pre-update install: merge defaults in front of custom types
+                    initialTypes = [...DEFAULT_WORKOUT_TYPES, ...savedTypes];
+                    typesNeedPersist = true; // Save merged list so migration runs only once
+                } else {
+                    // Already migrated
+                    initialTypes = savedTypes;
+                }
+                setExtraTypes(initialTypes);
+                if (typesNeedPersist) {
+                    setData('workout_custom_types', initialTypes);
+                }
+
                 if (savedActive) setActiveWorkout(savedActive);
-                if (savedTypes) setExtraTypes(savedTypes);
                 if (savedUnit) setPreferredUnit(savedUnit);
                 if (savedTimer) setRestTimer(savedTimer);
 
-                // Migration: Deduplicate Exercises
-                if (savedHistory) {
-                    const MIGRATION_MAP = {
-                        'Leg Extensions': 'Leg Extension',
-                        'Preacher Curls': 'Preacher Curl',
-                        'Lat Raise': 'Lateral Raises',
-                        'Pulldown': 'Lat Pulldown',
-                        'Seated Row': 'Seated Cable Row',
-                        'Shoulder Press': 'Overhead Press (OHP)',
-                        'Butterfly': 'Chest Fly (Machine/Dumbbell)',
-                        'Reverse Flies': 'Reverse Pec Deck / Rear Delt Fly',
-                        'cable Tricep Extension': 'Tricep Pushdown (Cable)', // casing might vary
-                        'Cable Tricep Extension': 'Tricep Pushdown (Cable)',
-                        'Pulley Bicep Curl Dropset': 'Cable Bicep Curl',
-                        'Kickbacks': 'Glute Kickback'
-                    };
+                // --- History migration pipeline ---
+                let currentHistory = savedHistory || [];
 
-                    let hasChanges = false;
-                    const migratedHistory = savedHistory.map(w => {
-                        if (!w.exercises) return w;
-                        const newExercises = w.exercises.map(ex => {
-                            if (MIGRATION_MAP[ex.name]) {
-                                hasChanges = true;
-                                return { ...ex, name: MIGRATION_MAP[ex.name] };
-                            }
-                            return ex;
-                        });
-                        return { ...w, exercises: newExercises };
+                // Migration 1: Deduplicate Exercise Names
+                const MIGRATION_MAP = {
+                    'Leg Extensions': 'Leg Extension',
+                    'Preacher Curls': 'Preacher Curl',
+                    'Lat Raise': 'Lateral Raises',
+                    'Pulldown': 'Lat Pulldown',
+                    'Seated Row': 'Seated Cable Row',
+                    'Shoulder Press': 'Overhead Press (OHP)',
+                    'Butterfly': 'Chest Fly (Machine/Dumbbell)',
+                    'Reverse Flies': 'Reverse Pec Deck / Rear Delt Fly',
+                    'cable Tricep Extension': 'Tricep Pushdown (Cable)',
+                    'Cable Tricep Extension': 'Tricep Pushdown (Cable)',
+                    'Pulley Bicep Curl Dropset': 'Cable Bicep Curl',
+                    'Kickbacks': 'Glute Kickback'
+                };
+
+                let hasNameChanges = false;
+                currentHistory = currentHistory.map(w => {
+                    if (!w.exercises) return w;
+                    const newExercises = w.exercises.map(ex => {
+                        if (MIGRATION_MAP[ex.name]) {
+                            hasNameChanges = true;
+                            return { ...ex, name: MIGRATION_MAP[ex.name] };
+                        }
+                        return ex;
                     });
+                    return { ...w, exercises: newExercises };
+                });
+                if (hasNameChanges) console.log('Migrated Exercise Names in History');
 
-                    if (hasChanges) {
-                        setHistory(migratedHistory);
-                        console.log("Migrated Exercise Names in History");
-                    }
+                // Migration 2: Backfill hadPR for legacy workouts
+                const needsHadPRMigration = currentHistory.some(w => w.hadPR === undefined);
+                if (needsHadPRMigration) {
+                    const sorted = [...currentHistory].sort((a, b) =>
+                        new Date(a.endTime) - new Date(b.endTime));
 
-                    // Migration: Backfill hadPR for legacy workouts
-                    const historyToCheck = hasChanges ? migratedHistory : savedHistory;
-                    const needsHadPRMigration = historyToCheck.some(w => w.hadPR === undefined);
+                    const setPRs = {};
+                    const exerciseTotalPRs = {};
 
-                    if (needsHadPRMigration) {
-                        // Sort oldest first for rolling PR calculation
-                        const sorted = [...historyToCheck].sort((a, b) =>
-                            new Date(a.endTime) - new Date(b.endTime));
-
-                        // Rolling PR maxes
-                        const setPRs = {};      // { exerciseName: maxSetVolume }
-                        const exerciseTotalPRs = {}; // { exerciseName: maxTotalVolume }
-
-                        const withHadPR = sorted.map(workout => {
-                            // Skip if already has hadPR defined
-                            if (workout.hadPR !== undefined) {
-                                // Still update PR maxes from this workout
-                                for (const ex of workout.exercises || []) {
-                                    if (ex.target !== 'Cardio' && ex.sets) {
-                                        for (const s of ex.sets) {
-                                            if (s.completed && s.weight > 0 && s.reps > 0) {
-                                                const vol = s.weight * s.reps;
-                                                if (vol > (setPRs[ex.name] || 0)) {
-                                                    setPRs[ex.name] = vol;
-                                                }
-                                            }
-                                        }
-                                        const totalVol = ex.sets.reduce((sum, s) =>
-                                            sum + (s.completed ? s.weight * s.reps : 0), 0);
-                                        if (totalVol > (exerciseTotalPRs[ex.name] || 0)) {
-                                            exerciseTotalPRs[ex.name] = totalVol;
-                                        }
-                                    }
-                                    if (ex.target === 'Cardio' && ex.accumulatedSeconds > 0) {
-                                        if (ex.accumulatedSeconds > (setPRs[ex.name] || 0)) {
-                                            setPRs[ex.name] = ex.accumulatedSeconds;
-                                        }
-                                    }
-                                }
-                                return workout;
-                            }
-
-                            let hadPR = false;
-
+                    currentHistory = sorted.map(workout => {
+                        if (workout.hadPR !== undefined) {
                             for (const ex of workout.exercises || []) {
-                                // Check set-level PRs
                                 if (ex.target !== 'Cardio' && ex.sets) {
-                                    const currentSetMax = setPRs[ex.name] || 0;
                                     for (const s of ex.sets) {
                                         if (s.completed && s.weight > 0 && s.reps > 0) {
                                             const vol = s.weight * s.reps;
-                                            if (vol > currentSetMax) {
-                                                hadPR = true;
-                                                setPRs[ex.name] = vol;
-                                            }
+                                            if (vol > (setPRs[ex.name] || 0)) setPRs[ex.name] = vol;
                                         }
                                     }
-
-                                    // Check exercise-level PRs (total volume)
                                     const totalVol = ex.sets.reduce((sum, s) =>
                                         sum + (s.completed ? s.weight * s.reps : 0), 0);
-                                    if (totalVol > (exerciseTotalPRs[ex.name] || 0)) {
-                                        hadPR = true;
-                                        exerciseTotalPRs[ex.name] = totalVol;
-                                    }
+                                    if (totalVol > (exerciseTotalPRs[ex.name] || 0)) exerciseTotalPRs[ex.name] = totalVol;
                                 }
-
-                                // Check cardio PRs
                                 if (ex.target === 'Cardio' && ex.accumulatedSeconds > 0) {
-                                    if (ex.accumulatedSeconds > (setPRs[ex.name] || 0)) {
-                                        hadPR = true;
-                                        setPRs[ex.name] = ex.accumulatedSeconds;
-                                    }
+                                    if (ex.accumulatedSeconds > (setPRs[ex.name] || 0)) setPRs[ex.name] = ex.accumulatedSeconds;
                                 }
                             }
+                            return workout;
+                        }
 
-                            return { ...workout, hadPR };
-                        });
-
-                        // Save migrated data back to DB
-                        setData('workout_history', withHadPR);
-                        setHistory(withHadPR);
-                        console.log("Migrated hadPR for legacy workouts");
-                    }
+                        let hadPR = false;
+                        for (const ex of workout.exercises || []) {
+                            if (ex.target !== 'Cardio' && ex.sets) {
+                                const currentSetMax = setPRs[ex.name] || 0;
+                                for (const s of ex.sets) {
+                                    if (s.completed && s.weight > 0 && s.reps > 0) {
+                                        const vol = s.weight * s.reps;
+                                        if (vol > currentSetMax) { hadPR = true; setPRs[ex.name] = vol; }
+                                    }
+                                }
+                                const totalVol = ex.sets.reduce((sum, s) =>
+                                    sum + (s.completed ? s.weight * s.reps : 0), 0);
+                                if (totalVol > (exerciseTotalPRs[ex.name] || 0)) {
+                                    hadPR = true;
+                                    exerciseTotalPRs[ex.name] = totalVol;
+                                }
+                            }
+                            if (ex.target === 'Cardio' && ex.accumulatedSeconds > 0) {
+                                if (ex.accumulatedSeconds > (setPRs[ex.name] || 0)) {
+                                    hadPR = true;
+                                    setPRs[ex.name] = ex.accumulatedSeconds;
+                                }
+                            }
+                        }
+                        return { ...workout, hadPR };
+                    });
+                    console.log('Migrated hadPR for legacy workouts');
                 }
+
+                // Migration 3: Backfill splitId for records that don't have one yet.
+                // Build a lookup from workout name -> splitId using the current types list.
+                const needsSplitIdMigration = currentHistory.some(w => !w.splitId);
+                if (needsSplitIdMigration) {
+                    const nameToId = {};
+                    initialTypes.forEach(t => { nameToId[t.name] = t.id; });
+                    // Also include DEFAULT_WORKOUT_TYPES so names from before any deletion still match
+                    DEFAULT_WORKOUT_TYPES.forEach(t => {
+                        if (!nameToId[t.name]) nameToId[t.name] = t.id;
+                    });
+
+                    currentHistory = currentHistory.map(w => {
+                        if (w.splitId) return w;
+                        const id = nameToId[w.name];
+                        return id ? { ...w, splitId: id } : w;
+                    });
+                    console.log('Backfilled splitId on legacy history records');
+                }
+
+                setHistory(currentHistory);
+
+                // Persist all migrations back to DB in one shot
+                if (hasNameChanges || needsHadPRMigration || needsSplitIdMigration) {
+                    setData('workout_history', currentHistory);
+                }
+
             } catch (err) {
-                console.error("Failed to load data from DB:", err);
+                console.error('Failed to load data from DB:', err);
             } finally {
                 setIsInitialized(true);
             }
@@ -234,37 +257,36 @@ export const WorkoutProvider = ({ children }) => {
         setExtraTypes(extraTypes.filter(t => t.id !== id));
     };
 
-    const startWorkout = (type, customName = null) => {
-        const name = customName || type; // Use custom name if provided
-        let workout = createWorkout(name, type);
+    const startWorkout = (workoutDef) => {
+        const { id: splitId, name, template } = workoutDef;
+        let workout = createWorkout(name, name);
+        workout.splitId = splitId;
 
-        // Pre-fill exercises based on type
-        // Pre-fill exercises logic
-
-        // 1. Try to find the last completed session of this specific workout name
-        // This works for both Standard (name matches type) and Custom (unique names)
+        // 1. Try to find the last completed session for this split (by stable ID)
         const lastSession = history
-            .filter(w => w.name === name && w.endTime)
-            .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))[0];
+            .filter(w => w.splitId === splitId && w.endTime)
+            .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))[0]
+            // Fallback: match by name for legacy records that have no splitId yet
+            || history
+                .filter(w => !w.splitId && w.name === name && w.endTime)
+                .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))[0];
 
         if (lastSession) {
             // Copy exercises from history
             workout.exercises = lastSession.exercises.map(ex => ({
                 ...createExercise(ex.name, ex.target),
-                targetTimeMinutes: ex.targetTimeMinutes || 0, // Preserve previous target time
+                targetTimeMinutes: ex.targetTimeMinutes || 0,
                 sets: ex.sets.map(s => ({
                     ...s,
                     id: uuidv4(),
                     completed: false,
-                    // Preserve weight/reps from history
                 }))
             }));
-        } else if (WORKOUT_TEMPLATES[type] && !customName) {
-            // 2. Fallback to Standard Template if no history and not custom
-            const template = WORKOUT_TEMPLATES[type];
+        } else if (template && template.length > 0) {
+            // 2. Use the split's own template (covers built-ins on first use)
             workout.exercises = template.map(t => createExercise(t.name, t.target));
         } else {
-            // 3. New Custom Workout (first time) starts empty
+            // 3. New custom workout with no template starts empty
             workout.exercises = [];
         }
 
@@ -336,6 +358,7 @@ export const WorkoutProvider = ({ children }) => {
             endTime: endTime.toISOString(),
             hadPR
         };
+        // splitId is already on activeWorkout from startWorkout; it carries through here.
 
         setHistory([...history, completed]);
         setActiveWorkout(null);

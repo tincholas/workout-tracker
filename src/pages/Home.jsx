@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'framer-motion';
-import { EXERCISE_TYPES, SPLIT_COLORS } from '../store/models';
+import { EXERCISE_TYPES } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -45,12 +45,6 @@ const ICON_MAP = {
     'Moon': Moon
 };
 
-const SPLIT_ICONS = {
-    [EXERCISE_TYPES.CHEST_TRICEPS]: 'Shirt',
-    [EXERCISE_TYPES.BACK_BICEPS]: 'BicepsFlexed',
-    [EXERCISE_TYPES.SHOULDERS]: 'User',
-    [EXERCISE_TYPES.LEGS]: 'Footprints'
-};
 
 const COLORS = ['#ef4444', '#3b82f6', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#f97316', '#64748b'];
 
@@ -82,9 +76,9 @@ export default function Home() {
         return sorted[0].name;
     }, [history]);
 
-    const handleStart = (type, customName = null) => {
-        setIsStarting(true); // Suppress "Active Workout Found" during exit
-        startWorkout(type, customName);
+    const handleStart = (workoutDef) => {
+        setIsStarting(true);
+        startWorkout(workoutDef);
         navigate('/session');
     };
 
@@ -94,18 +88,26 @@ export default function Home() {
         createCustomType(newWorkoutName, selectedColor, selectedIcon);
         setShowModal(false);
         setNewWorkoutName('');
-        setSelectedIcon('Star'); // Reset
+        setSelectedIcon('Star');
+    };
+
+    // Resolve a split's display name: use i18nKey translation if available, otherwise raw name
+    const resolveSplitName = (workoutDef) => {
+        if (workoutDef.i18nKey) {
+            return t(`common_splits.${workoutDef.i18nKey}`, { defaultValue: workoutDef.name });
+        }
+        return workoutDef.name;
     };
 
     // Resolve Active Workout Name
     const activeWorkoutName = React.useMemo(() => {
         if (!activeWorkout) return '';
-        const splitKey = Object.keys(EXERCISE_TYPES).find(key => EXERCISE_TYPES[key] === activeWorkout.type);
-        if (splitKey && splitKey !== 'CUSTOM') {
-            return t(`splits.${splitKey}`);
+        const splitDef = extraTypes.find(t => t.id === activeWorkout.splitId);
+        if (splitDef?.i18nKey) {
+            return t(`common_splits.${splitDef.i18nKey}`, { defaultValue: splitDef.name });
         }
         return activeWorkout.name;
-    }, [activeWorkout, t]);
+    }, [activeWorkout, extraTypes, t]);
 
     return (
         <div className="page-container" style={{
@@ -146,76 +148,21 @@ export default function Home() {
             )}
 
             <div style={{ display: 'grid', gap: '1rem' }}>
-                {/* Standard Splits */}
-                {Object.entries(EXERCISE_TYPES).filter(([key]) => key !== 'CUSTOM').map(([key, type]) => {
-                    const iconName = SPLIT_ICONS[type] || 'Dumbbell';
-                    const Icon = ICON_MAP[iconName] || Dumbbell;
-                    const isLast = lastWorkoutName === type;
+                {/* Unified Workout List */}
+                {extraTypes.map((workoutDef) => {
+                    const isLast = lastWorkoutName === workoutDef.name;
+                    const IconComponent = ICON_MAP[workoutDef.icon] || Star;
                     return (
-                        <div
-                            key={type}
-                            className="card"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleStart(type)}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleStart(type); } }}
-                            style={{
-                                padding: '1.5rem',
-                                borderLeft: `6px solid ${SPLIT_COLORS[type]}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1rem',
-                                fontSize: '1.2rem',
-                                fontWeight: 'bold',
-                                width: '100%',
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s',
-                                color: 'var(--text-primary)',
-                                position: 'relative',
-                                boxSizing: 'border-box',
-                                userSelect: 'none',
-                                touchAction: 'pan-y'
-                            }}
-                        >
-                            <div style={{
-                                background: `${SPLIT_COLORS[type]}20`,
-                                padding: '0.75rem',
-                                borderRadius: '12px',
-                                color: SPLIT_COLORS[type]
-                            }}>
-                                <Icon size={28} />
-                            </div>
-                            <div style={{ flex: 1 }}>{t(`splits.${key}`)}</div>
-                            {isLast && (
-                                <div style={{
-                                    display: 'flex', alignItems: 'center', gap: '4px',
-                                    color: 'var(--text-muted)', fontSize: '0.75rem',
-                                    background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '12px'
-                                }}>
-                                    <History size={12} />
-                                    <span>{t('last_workout')}</span>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-
-                {/* Custom Workouts */}
-                {extraTypes.map((custom) => {
-                    const isLast = lastWorkoutName === custom.name;
-                    const IconComponent = ICON_MAP[custom.icon] || Star;
-                    return (
-                        <div key={custom.id} style={{ position: 'relative' }}>
+                        <div key={workoutDef.id} style={{ position: 'relative' }}>
                             <div
                                 className="card"
                                 role="button"
                                 tabIndex={0}
-                                onClick={() => handleStart(EXERCISE_TYPES.CUSTOM, custom.name)}
-                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleStart(EXERCISE_TYPES.CUSTOM, custom.name); } }}
+                                onClick={() => handleStart(workoutDef)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleStart(workoutDef); } }}
                                 style={{
                                     padding: '1.5rem',
-                                    borderLeft: `6px solid ${custom.color}`,
+                                    borderLeft: `6px solid ${workoutDef.color}`,
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '1rem',
@@ -224,27 +171,29 @@ export default function Home() {
                                     width: '100%',
                                     textAlign: 'left',
                                     cursor: 'pointer',
+                                    transition: 'transform 0.2s',
                                     color: 'var(--text-primary)',
+                                    position: 'relative',
                                     boxSizing: 'border-box',
                                     userSelect: 'none',
                                     touchAction: 'pan-y'
                                 }}
                             >
                                 <div style={{
-                                    background: `${custom.color}20`,
+                                    background: `${workoutDef.color}20`,
                                     padding: '0.75rem',
                                     borderRadius: '12px',
-                                    color: custom.color
+                                    color: workoutDef.color
                                 }}>
                                     <IconComponent size={28} />
                                 </div>
-                                <div style={{ flex: 1 }}>{custom.name}</div>
+                                <div style={{ flex: 1 }}>{resolveSplitName(workoutDef)}</div>
                                 {isLast && (
                                     <div style={{
                                         display: 'flex', alignItems: 'center', gap: '4px',
                                         color: 'var(--text-muted)', fontSize: '0.75rem',
                                         background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '12px',
-                                        marginRight: '2.5rem' // Avoid delete button
+                                        marginRight: '2.5rem'
                                     }}>
                                         <History size={12} />
                                         <span>{t('last_workout')}</span>
@@ -254,8 +203,8 @@ export default function Home() {
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm(t('confirm_delete_split', { name: custom.name }))) {
-                                        deleteCustomType(custom.id);
+                                    if (window.confirm(t('confirm_delete_split', { name: resolveSplitName(workoutDef) }))) {
+                                        deleteCustomType(workoutDef.id);
                                     }
                                 }}
                                 style={{

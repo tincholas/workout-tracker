@@ -145,3 +145,41 @@ export const WORKOUT_TEMPLATES = {
         { name: 'Leg Extensions', target: 'Legs' }
     ]
 };
+
+// The 4 default splits as unified data objects.
+// Stable IDs ensure the backfill migration can match existing history records,
+// and that splitId references remain valid across app updates.
+export const DEFAULT_WORKOUT_TYPES = [
+    {
+        id: 'builtin-chest-triceps',
+        name: 'Chest & Triceps',
+        i18nKey: 'CHEST_TRICEPS',
+        color: '#ef4444',
+        icon: 'Shirt',
+        template: WORKOUT_TEMPLATES[EXERCISE_TYPES.CHEST_TRICEPS]
+    },
+    {
+        id: 'builtin-back-biceps',
+        name: 'Back & Biceps',
+        i18nKey: 'BACK_BICEPS',
+        color: '#3b82f6',
+        icon: 'BicepsFlexed',
+        template: WORKOUT_TEMPLATES[EXERCISE_TYPES.BACK_BICEPS]
+    },
+    {
+        id: 'builtin-shoulders',
+        name: 'Shoulders',
+        i18nKey: 'SHOULDERS',
+        color: '#eab308',
+        icon: 'User',
+        template: WORKOUT_TEMPLATES[EXERCISE_TYPES.SHOULDERS]
+    },
+    {
+        id: 'builtin-legs',
+        name: 'Legs',
+        i18nKey: 'LEGS',
+        color: '#22c55e',
+        icon: 'Footprints',
+        template: WORKOUT_TEMPLATES[EXERCISE_TYPES.LEGS]
+    }
+];
