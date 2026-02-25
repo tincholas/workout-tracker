@@ -49,7 +49,9 @@
     "create_exercise": "Create \"{{name}}\"",
     "workouts": "Workouts",
     "daily_volume": "Daily Volume",
+    "daily_reps": "Daily Reps",
     "daily_cardio": "Daily Cardio",
+    "calendar": "Calendar",
     "workout_complete": "Workout Complete!",
     "workout_complete_message": "Great job crushing your goals.",
     "day_streak": "Day Streak",
@@ -170,5 +172,20 @@
     "pr_streak": "PR Streak",
     "workouts_this_month": "Workouts This Month",
     "workouts_this_year": "Workouts This Year",
-    "avg_per_month": "Avg / Month"
+    "avg_per_month": "Avg / Month",
+    "muscle_groups": {
+        "Chest": "Chest",
+        "Triceps": "Triceps",
+        "Back": "Back",
+        "Biceps": "Biceps",
+        "Shoulders": "Shoulders",
+        "Legs": "Legs",
+        "Core": "Core",
+        "Cardio": "Cardio",
+        "Arms": "Arms",
+        "Glutes": "Glutes",
+        "Abs": "Abs",
+        "Custom": "Custom",
+        "Other": "Other"
+    }
 }

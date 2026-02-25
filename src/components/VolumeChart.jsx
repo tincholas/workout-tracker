@@ -2,11 +2,12 @@ import React, { useMemo } from 'react';
 import '../utils/chartSetup';
 import { Bar } from 'react-chartjs-2';
 import { TARGET_COLORS } from '../store/models';
-
 import { useThemeColors } from '../hooks/useThemeColors';
+import { useTranslation } from 'react-i18next';
 
 export default function VolumeChart({ history, currentMonth, currentYear, disableAnimation }) {
     const { textMuted, borderSubtle } = useThemeColors();
+    const { t } = useTranslation();
     const chartData = useMemo(() => {
         if (!history) return null;
 
@@ -57,17 +58,17 @@ export default function VolumeChart({ history, currentMonth, currentYear, disabl
         };
 
         const datasets = Object.keys(targetDataMap).map(target => ({
-            label: target,
+            label: t(`muscle_groups.${target}`, { defaultValue: target }),
             data: targetDataMap[target],
             backgroundColor: getColor(target),
-            borderRadius: 4, // Add border radius for consistency with Cardio chart
+            borderRadius: 4,
         }));
 
         return {
             labels,
             datasets
         };
-    }, [history, currentMonth, currentYear]);
+    }, [history, currentMonth, currentYear, t]);
 
     const options = {
         responsive: true,

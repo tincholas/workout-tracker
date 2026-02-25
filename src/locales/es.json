@@ -171,5 +171,22 @@
     "pr_streak": "Racha de Mejora",
     "workouts_this_month": "Entrenamientos Este Mes",
     "workouts_this_year": "Entrenamientos Este Año",
-    "avg_per_month": "Promedio / Mes"
+    "avg_per_month": "Promedio / Mes",
+    "daily_reps": "Repeticiones Diarias",
+    "calendar": "Calendario",
+    "muscle_groups": {
+        "Chest": "Pecho",
+        "Triceps": "Tríceps",
+        "Back": "Espalda",
+        "Biceps": "Bíceps",
+        "Shoulders": "Hombros",
+        "Legs": "Piernas",
+        "Core": "Core",
+        "Cardio": "Cardio",
+        "Arms": "Brazos",
+        "Glutes": "Glúteos",
+        "Abs": "Abdominales",
+        "Custom": "Personalizado",
+        "Other": "Otro"
+    }
 }

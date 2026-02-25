@@ -46,6 +46,23 @@ const ICON_MAP = {
 
 const COLORS = ['#ef4444', '#3b82f6', '#eab308', '#22c55e', '#a855f7', '#ec4899', '#f97316', '#64748b'];
 
+// Maps well-known English split names to their common_splits i18n keys.
+// Used as a fallback for splits that have no i18nKey (e.g. user-created ones with common names,
+// or built-ins whose i18nKey was accidentally stripped).
+const NAME_TO_I18N_KEY = {
+    'Chest & Triceps': 'CHEST_TRICEPS',
+    'Back & Biceps': 'BACK_BICEPS',
+    'Shoulders': 'SHOULDERS',
+    'Legs': 'LEGS',
+    'Push': 'PUSH',
+    'Pull': 'PULL',
+    'Full Body': 'FULL_BODY',
+    'Upper Body': 'UPPER_BODY',
+    'Lower Body': 'LOWER_BODY',
+    'Arms': 'ARMS',
+    'Core': 'CORE',
+};
+
 export default function Home() {
     const { startWorkout, activeWorkout, extraTypes, createCustomType, deleteCustomType, editCustomType, moveType, history } = useWorkoutContext();
     const navigate = useNavigate();
@@ -119,11 +136,13 @@ export default function Home() {
         setSelectedIcon('Star');
     };
 
-    // Resolve a split's display name: use i18nKey translation if available, otherwise raw name
+    // Resolve a split's display name:
+    // 1. Use i18nKey if the split has one (built-ins)
+    // 2. Fall back to a name-to-key lookup (common user-created names like 'Full Body')
+    // 3. Finally use the raw name
     const resolveSplitName = (workoutDef) => {
-        if (workoutDef.i18nKey) {
-            return t(`common_splits.${workoutDef.i18nKey}`, { defaultValue: workoutDef.name });
-        }
+        const key = workoutDef.i18nKey || NAME_TO_I18N_KEY[workoutDef.name];
+        if (key) return t(`common_splits.${key}`, { defaultValue: workoutDef.name });
         return workoutDef.name;
     };
 
@@ -131,8 +150,10 @@ export default function Home() {
     const activeWorkoutName = React.useMemo(() => {
         if (!activeWorkout) return '';
         const splitDef = extraTypes.find(t => t.id === activeWorkout.splitId);
-        if (splitDef?.i18nKey) {
-            return t(`common_splits.${splitDef.i18nKey}`, { defaultValue: splitDef.name });
+        if (splitDef) {
+            const key = splitDef.i18nKey || NAME_TO_I18N_KEY[splitDef.name];
+            if (key) return t(`common_splits.${key}`, { defaultValue: splitDef.name });
+            return splitDef.name;
         }
         return activeWorkout.name;
     }, [activeWorkout, extraTypes, t]);

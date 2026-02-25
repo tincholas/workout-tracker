@@ -258,10 +258,16 @@ export const WorkoutProvider = ({ children }) => {
     };
 
     const editCustomType = (id, name, color, icon) => {
-        setExtraTypes(extraTypes.map(t =>
+        setExtraTypes(extraTypes.map(t => {
+            if (t.id !== id) return t;
+            // Preserve i18nKey if the name hasn't changed from what i18nKey resolves to.
+            // i.e. only strip it when the user intentionally renames the split.
+            const original = DEFAULT_WORKOUT_TYPES.find(d => d.id === id);
+            const originalName = original?.name ?? t.name;
+            const keepKey = t.i18nKey && name === originalName;
             // eslint-disable-next-line no-unused-vars
-            t.id === id ? { ...t, name, color, icon, i18nKey: undefined } : t
-        ));
+            return { ...t, name, color, icon, i18nKey: keepKey ? t.i18nKey : undefined };
+        }));
     };
 
     const moveType = (id, direction) => {

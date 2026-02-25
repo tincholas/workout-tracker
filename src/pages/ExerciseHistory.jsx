@@ -65,7 +65,7 @@ export default function ExerciseHistory({ embedded = false }) {
                             onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
                             onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
                         >
-                            {target}
+                            {t(`muscle_groups.${target}`, { defaultValue: target })}
                         </h3>
                         <div style={{ display: 'grid', gap: '0.5rem' }}>
                             {Array.from(exercisesByTarget[target]).sort().map(name => (

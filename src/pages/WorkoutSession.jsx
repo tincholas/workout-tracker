@@ -31,12 +31,20 @@ export default function WorkoutSession() {
     const [pickerMode, setPickerMode] = useState(null); // 'ADD' or 'SWAP'
     const [swapTargetId, setSwapTargetId] = useState(null);
 
-    // Resolve Display Name: use i18nKey translation if the split is a known type, else use stored name
+    // Resolve Display Name: use i18nKey, then name-based lookup, then raw name
     const displayName = React.useMemo(() => {
         if (!activeWorkout) return '';
         const splitDef = extraTypes.find(t => t.id === activeWorkout.splitId);
-        if (splitDef?.i18nKey) {
-            return t(`common_splits.${splitDef.i18nKey}`, { defaultValue: splitDef.name });
+        if (splitDef) {
+            const NAME_TO_I18N_KEY = {
+                'Chest & Triceps': 'CHEST_TRICEPS', 'Back & Biceps': 'BACK_BICEPS',
+                'Shoulders': 'SHOULDERS', 'Legs': 'LEGS', 'Push': 'PUSH', 'Pull': 'PULL',
+                'Full Body': 'FULL_BODY', 'Upper Body': 'UPPER_BODY', 'Lower Body': 'LOWER_BODY',
+                'Arms': 'ARMS', 'Core': 'CORE',
+            };
+            const key = splitDef.i18nKey || NAME_TO_I18N_KEY[splitDef.name];
+            if (key) return t(`common_splits.${key}`, { defaultValue: splitDef.name });
+            return splitDef.name;
         }
         return activeWorkout.name;
     }, [activeWorkout, extraTypes, t]);
