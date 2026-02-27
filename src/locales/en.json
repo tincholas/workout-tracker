@@ -1,6 +1,17 @@
 {
     "app_title": "IRON TRACK",
     "welcome_message": "Select your split to begin",
+    "track_weight_mood": "Track Weight / Mood",
+    "track": "Track",
+    "weight": "Weight",
+    "mood": "Mood",
+    "mood_names": [
+        "Terrible",
+        "Bad",
+        "Okay",
+        "Good",
+        "Great"
+    ],
     "resume_workout": "Resume {{name}}",
     "active_workout_found": "Active Workout Found",
     "create_custom_workout": "Create Custom Workout",

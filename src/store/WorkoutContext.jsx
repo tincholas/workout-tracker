@@ -16,6 +16,7 @@ export const WorkoutProvider = ({ children }) => {
     const [restTimer, setRestTimer] = useState({ enabled: false, seconds: 60 });
     const [isInitialized, setIsInitialized] = useState(false);
     const [notificationPermission, setNotificationPermission] = useState('default');
+    const [weightMoodLog, setWeightMoodLog] = useState([]);
 
     // Notification permission check
     useEffect(() => {
@@ -50,6 +51,7 @@ export const WorkoutProvider = ({ children }) => {
                 const savedTypes = await getData('workout_custom_types');
                 const savedUnit = await getData('workout_unit_preference');
                 const savedTimer = await getData('workout_rest_timer');
+                const savedWeightMoodLog = await getData('weight_mood_log');
 
                 // Resolve initialTypes:
                 // - Fresh install (null/empty)      → seed with all 4 defaults
@@ -81,6 +83,7 @@ export const WorkoutProvider = ({ children }) => {
                 if (savedActive) setActiveWorkout(savedActive);
                 if (savedUnit) setPreferredUnit(savedUnit);
                 if (savedTimer) setRestTimer(savedTimer);
+                if (savedWeightMoodLog) setWeightMoodLog(savedWeightMoodLog);
 
                 // --- History migration pipeline ---
                 let currentHistory = savedHistory || [];
@@ -221,7 +224,8 @@ export const WorkoutProvider = ({ children }) => {
         setData('workout_custom_types', extraTypes);
         setData('workout_unit_preference', preferredUnit);
         setData('workout_rest_timer', restTimer);
-    }, [history, activeWorkout, extraTypes, preferredUnit, restTimer, isInitialized]);
+        setData('weight_mood_log', weightMoodLog);
+    }, [history, activeWorkout, extraTypes, preferredUnit, restTimer, weightMoodLog, isInitialized]);
 
 
     if (!isInitialized) {
@@ -240,6 +244,29 @@ export const WorkoutProvider = ({ children }) => {
     // Actions
     const toggleUnit = () => {
         setPreferredUnit(prev => prev === 'KG' ? 'LBS' : 'KG');
+    };
+
+    // Weight/mood log helpers
+    const toDateStr = (date) => {
+        const d = date instanceof Date ? date : new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    const trackWeightMood = (weight, mood) => {
+        const date = toDateStr(new Date());
+        setWeightMoodLog(prev => {
+            const filtered = prev.filter(e => e.date !== date);
+            return [...filtered, { date, weight, mood }];
+        });
+    };
+
+    const getWeightMoodForDate = (dateStr) => {
+        return weightMoodLog.find(e => e.date === dateStr) || null;
+    };
+
+    const getLastWeightMoodEntry = () => {
+        if (weightMoodLog.length === 0) return null;
+        return [...weightMoodLog].sort((a, b) => b.date.localeCompare(a.date))[0];
     };
 
     const createCustomType = (name, color, icon) => {
@@ -631,7 +658,11 @@ export const WorkoutProvider = ({ children }) => {
             personalRecords,
             exercisePRs,
             notificationPermission,
-            requestNotificationPermission
+            requestNotificationPermission,
+            weightMoodLog,
+            trackWeightMood,
+            getWeightMoodForDate,
+            getLastWeightMoodEntry
         }}>
             {children}
         </WorkoutContext.Provider>

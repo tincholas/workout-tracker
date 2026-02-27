@@ -9,6 +9,7 @@ import {
     Brain, Smile, Ghost, Sun, Moon, MoreVertical, ChevronUp, ChevronDown, Trash2, Pencil
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import WeightMoodTracker from '../components/WeightMoodTracker';
 
 // Icon Registry - Mapping names to Components
 const ICON_MAP = {
@@ -171,6 +172,8 @@ export default function Home() {
                 </h1>
                 <p style={{ color: 'var(--text-muted)' }}>{t('welcome_message')}</p>
             </header>
+
+            <WeightMoodTracker />
 
             {activeWorkout && !isStarting && (
                 <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', border: '1px solid var(--primary)' }}>

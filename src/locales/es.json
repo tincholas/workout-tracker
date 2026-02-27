@@ -1,6 +1,17 @@
 {
     "app_title": "IRON TRACK",
     "welcome_message": "Selecciona tu rutina para comenzar",
+    "track_weight_mood": "Registrar Peso / Ánimo",
+    "track": "Registrar",
+    "weight": "Peso",
+    "mood": "Ánimo",
+    "mood_names": [
+        "Muy mal",
+        "Mal",
+        "Regular",
+        "Bien",
+        "Muy bien"
+    ],
     "resume_workout": "Reanudar {{name}}",
     "active_workout_found": "Entrenamiento Activo Encontrado",
     "create_custom_workout": "Crear Rutina Personalizada",

@@ -3,12 +3,13 @@ import { useLocation } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
 import VolumeChart from '../components/VolumeChart';
 import CardioChart from '../components/CardioChart';
+import WeightChart from '../components/WeightChart';
 import { shareWorkout } from '../utils/shareWorkout';
 import { ChevronLeft, ChevronRight, X, Share2, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Calendar({ embedded = false }) {
-    const { history, preferredUnit, extraTypes, personalRecords, exercisePRs } = useWorkout();
+    const { history, preferredUnit, extraTypes, personalRecords, exercisePRs, weightMoodLog } = useWorkout();
     const location = useLocation();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
@@ -178,6 +179,12 @@ export default function Calendar({ embedded = false }) {
         return { hasSetsData: hasSets, hasCardioData: hasCardio };
     }, [history, month, year]);
 
+    const hasWeightData = useMemo(() => {
+        if (!weightMoodLog || weightMoodLog.length === 0) return false;
+        const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+        return weightMoodLog.some(e => e.date.startsWith(prefix));
+    }, [weightMoodLog, month, year]);
+
     const inner = (
         <div
             style={{
@@ -217,6 +224,13 @@ export default function Calendar({ embedded = false }) {
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
                     <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>{t('daily_cardio')} ({t('minutes')})</h3>
                     <CardioChart history={history} currentMonth={month} currentYear={year} disableAnimation={location.state?.fromSwipe} />
+                </div>
+            )}
+
+            {hasWeightData && (
+                <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>{t('weight')}</h3>
+                    <WeightChart currentMonth={month} currentYear={year} disableAnimation={location.state?.fromSwipe} />
                 </div>
             )}
 
