@@ -418,10 +418,13 @@ export const WorkoutProvider = ({ children }) => {
             workout.exercises = lastSession.exercises.map(ex => ({
                 ...createExercise(ex.name, ex.target),
                 targetTimeMinutes: ex.targetTimeMinutes || 0,
+                unilateral: ex.unilateral ?? false,
                 sets: ex.sets.map(s => ({
                     ...s,
                     id: uuidv4(),
                     completed: false,
+                    leftDone: false,
+                    rightDone: false,
                 }))
             }));
         } else if (template && template.length > 0) {
@@ -465,7 +468,8 @@ export const WorkoutProvider = ({ children }) => {
                 const historicalBest = personalRecords[ex.name]?.volume || 0;
                 for (const s of ex.sets) {
                     if (s.completed && s.weight > 0 && s.reps > 0) {
-                        if (s.weight * s.reps > historicalBest) {
+                        const mult = s.unilateral ? 2 : 1;
+                        if (s.weight * s.reps * mult > historicalBest) {
                             hadPR = true;
                             break;
                         }
@@ -475,8 +479,10 @@ export const WorkoutProvider = ({ children }) => {
 
             // Check exercise-level PRs (total volume)
             if (!hadPR && ex.target !== 'Cardio' && ex.sets) {
-                const totalVol = ex.sets.reduce((sum, s) =>
-                    sum + (s.completed ? s.weight * s.reps : 0), 0);
+                const totalVol = ex.sets.reduce((sum, s) => {
+                    const mult = s.unilateral ? 2 : 1;
+                    return sum + (s.completed ? s.weight * s.reps * mult : 0);
+                }, 0);
                 const historicalTotalBest = exercisePRs[ex.name]?.totalVolume || 0;
                 if (totalVol > historicalTotalBest) {
                     hadPR = true;
@@ -543,7 +549,13 @@ export const WorkoutProvider = ({ children }) => {
             target = exerciseOrName.target || findTarget(name);
         }
 
-        const newExercise = createExercise(name, target);
+        // Default unilateral from the most recent history entry for this exercise
+        const lastEntry = [...history].reverse()
+            .flatMap(w => w.exercises)
+            .find(e => e.name === name);
+        const unilateral = lastEntry?.unilateral ?? false;
+
+        const newExercise = { ...createExercise(name, target), unilateral };
 
         setActiveWorkout({
             ...activeWorkout,
@@ -649,7 +661,10 @@ export const WorkoutProvider = ({ children }) => {
                 id: uuidv4(),
                 weight: lastSet ? lastSet.weight : 0,
                 reps: lastSet ? lastSet.reps : 12,
-                completed: false
+                completed: false,
+                leftDone: false,
+                rightDone: false,
+                unilateral: ex.unilateral ?? false,  // inherit exercise's current flag
             };
 
             return { ...ex, sets: [...ex.sets, newSet] };

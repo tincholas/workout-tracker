@@ -46,6 +46,9 @@ export const createSet = (weight = 0, reps = 12) => ({
     weight: Number(weight),
     reps: Number(reps),
     completed: false,
+    leftDone: false,
+    rightDone: false,
+    unilateral: false,
 });
 
 export const createExercise = (name, target = '') => ({

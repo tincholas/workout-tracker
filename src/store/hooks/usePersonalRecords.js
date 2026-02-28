@@ -40,7 +40,8 @@ export const usePersonalRecords = (history) => {
                 else if (ex.sets) {
                     ex.sets.forEach(s => {
                         if (s.completed && s.weight > 0 && s.reps > 0) {
-                            const vol = s.weight * s.reps;
+                            const mult = s.unilateral ? 2 : 1;
+                            const vol = s.weight * s.reps * mult;
                             const existing = records[ex.name] || { volume: 0, setId: null };
 
                             if (vol > existing.volume) {
@@ -72,7 +73,8 @@ export const usePersonalRecords = (history) => {
                 if (ex.target === 'Cardio') return;
 
                 const totalVol = ex.sets?.reduce((sum, s) => {
-                    return sum + (s.completed ? s.weight * s.reps : 0);
+                    const mult = s.unilateral ? 2 : 1;
+                    return sum + (s.completed ? s.weight * s.reps * mult : 0);
                 }, 0) || 0;
 
                 if (totalVol === 0) return;

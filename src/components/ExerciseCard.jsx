@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 export default function ExerciseCard({ exercise, onSwap, ...props }) {
-    const { addSet, removeSet, removeExercise, updateSet, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise, activeWorkout } = useWorkout();
+    const { addSet, removeSet, removeExercise, updateSet, updateExercise, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise, activeWorkout } = useWorkout();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const { t } = useTranslation();
@@ -27,8 +27,9 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
     const handleSetUpdate = (setId, updates) => {
         updateSet(exercise.id, setId, updates);
 
-        // Trigger Rest Timer if enabled and set is completed
-        if (updates.completed === true && restTimer.enabled && restTimer.seconds > 0) {
+        // Trigger rest timer when a set is completed OR when either side of a unilateral set is done
+        const sideCompleted = updates.leftDone === true || updates.rightDone === true;
+        if ((updates.completed === true || sideCompleted) && restTimer.enabled && restTimer.seconds > 0) {
             startRestTimer(exercise.id, restTimer.seconds);
         }
     };
@@ -43,12 +44,10 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         let maxVol = personalRecords[exercise.name]?.volume || 0;
         let bestSetId = null;
 
-        // Iterate strictly in order (index 0 to N)
-        // If a set BEATS the current max, it takes the crown.
         exercise.sets.forEach(s => {
             if (s.completed && s.weight > 0 && s.reps > 0) {
-                const vol = s.weight * s.reps;
-                // Strict inequality: Must beat history AND any previous PR set in this session.
+                const mult = s.unilateral ? 2 : 1;
+                const vol = s.weight * s.reps * mult;
                 if (vol > maxVol) {
                     maxVol = vol;
                     bestSetId = s.id;
@@ -56,7 +55,6 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
             }
         });
 
-        // If bestSetId is still null, it means no set beat the history.
         return bestSetId;
     }, [exercise.sets, exercise.name, personalRecords]);
 
@@ -69,8 +67,10 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         if (exercise.target === 'Cardio') return false;
         const best = exercisePRs[exercise.name]?.totalVolume || 0;
         if (best === 0) return false;
-        const completedVolume = liveSets.reduce((sum, s) =>
-            sum + (s.completed ? (Number(s.weight) || 0) * (Number(s.reps) || 0) : 0), 0);
+        const completedVolume = liveSets.reduce((sum, s) => {
+            const mult = s.unilateral ? 2 : 1;
+            return sum + (s.completed ? (Number(s.weight) || 0) * (Number(s.reps) || 0) * mult : 0);
+        }, 0);
         return completedVolume > best;
     }, [liveSets, exercise.name, exercise.target, exercisePRs]);
 
@@ -82,10 +82,13 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         const potentialVolume = liveSets.reduce((sum, s) => {
             const w = Number(s.weight) || 0;
             const r = Number(s.reps) || 0;
-            return sum + (w > 0 && r > 0 ? w * r : 0);
+            if (w <= 0 || r <= 0) return sum;
+            // Completed sets: use their stamped flag; uncompleted: use current exercise mode
+            const mult = s.completed ? (s.unilateral ? 2 : 1) : (exercise.unilateral ? 2 : 1);
+            return sum + w * r * mult;
         }, 0);
         return potentialVolume > best;
-    }, [liveSets, exercise.name, exercise.target, exercisePRs]);
+    }, [liveSets, exercise.name, exercise.target, exercise.unilateral, exercisePRs]);
 
     return (
         <motion.div
@@ -167,6 +170,25 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                                     <ArrowDown size={16} /> {t('move_down')}
                                 </button>
                                 <button
+                                    onClick={() => {
+                                        const newVal = !exercise.unilateral;
+                                        // Scale weight on uncompleted sets and reset side flags
+                                        const updatedSets = exercise.sets.map(s => {
+                                            if (s.completed) return s;
+                                            const rawWeight = newVal
+                                                ? (s.weight || 0) / 2          // bilateral → unilateral: halve
+                                                : (s.weight || 0) * 2;         // unilateral → bilateral: double
+                                            const scaledWeight = Math.round(rawWeight * 2) / 2; // round to 0.5 kg
+                                            return { ...s, unilateral: newVal, leftDone: false, rightDone: false, weight: scaledWeight };
+                                        });
+                                        updateExercise(exercise.id, { unilateral: newVal, sets: updatedSets });
+                                        setShowMenu(false);
+                                    }}
+                                    style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                                >
+                                    🔁 {exercise.unilateral ? t('make_bilateral', { defaultValue: 'Make Bilateral' }) : t('make_unilateral', { defaultValue: 'Make Unilateral' })}
+                                </button>
+                                <button
                                     onClick={() => { onSwap(exercise.id); setShowMenu(false); }}
                                     style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
                                 >
@@ -188,7 +210,7 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                 <CardioTimer exercise={exercise} />
             ) : (
                 <>
-                    <div style={{ marginBottom: '0.5rem', display: 'grid', gridTemplateColumns: '2rem 1fr 1fr 36px', gap: '0.5rem', paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
+                    <div style={{ marginBottom: '0.5rem', display: 'grid', gridTemplateColumns: exercise.unilateral ? '2rem 1fr 1fr 76px' : '2rem 1fr 1fr 36px', gap: '0.5rem', paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('set')}</span>
                         <span
                             onClick={toggleUnit}
@@ -197,7 +219,9 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                             {preferredUnit}
                         </span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>{t('reps')}</span>
-                        <span style={{ width: '36px' }}></span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                            {exercise.unilateral ? 'L / R' : ''}
+                        </span>
                     </div>
 
                     <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -218,6 +242,8 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                                         onUpdate={(updates) => handleSetUpdate(set.id, updates)}
                                         exerciseName={exercise.name}
                                         isPR={set.id === activePRSetId}
+                                        isUnilateral={!!exercise.unilateral}
+                                        exerciseIsUnilateral={!!exercise.unilateral}
                                     />
                                 </motion.div>
                             ))}

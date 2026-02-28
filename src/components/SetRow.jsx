@@ -3,43 +3,33 @@ import { useWorkout } from '../store/WorkoutContext';
 import { Check, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
+export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilateral, exerciseIsUnilateral }) {
     const { preferredUnit } = useWorkout();
+    // For completed sets use the stored set flag; for uncompleted sets follow the exercise
+    const showUnilateral = set.completed ? !!(set.unilateral) : !!isUnilateral;
 
     // --- Weight Logic ---
-    // Ref to store the weight value (ALWAYS IN KG) before clearing it on focus
     const prevWeightRef = useRef(set.weight);
-
-    // Local state for input value to allow typing decimals/empty
     const [tempValue, setTempValue] = React.useState(null);
-
-    // PR Animation State
     const [showCelebration, setShowCelebration] = useState(false);
 
-    // Trigger animation when isPR becomes true AND text implies newly completed
     useEffect(() => {
         if (isPR && set.completed) {
-            // Only animate if it wasn't just rendered as completed (simple check: mounting)
-            // Ideally we'd compare previous props, but for now, we'll trigger on effect
             setShowCelebration(true);
             const timer = setTimeout(() => setShowCelebration(false), 1000);
             return () => clearTimeout(timer);
         }
     }, [isPR, set.completed]);
 
+    // Stamp unilateral:false on single-check toggle so volume calc is correct
     const handleToggleComplete = () => {
-        const newState = !set.completed;
-        handleChange('completed', newState);
+        onUpdate({ completed: !set.completed, unilateral: false });
     };
 
-    // Helper for display
     const getDisplayWeight = () => {
-        // If user is typing, show their temporary value
         if (tempValue !== null) return tempValue;
-
         if (set.weight === '' || set.weight === null) return '';
         if (preferredUnit === 'KG') return set.weight;
-        // Convert KG -> LBS (1kg = 2.20462lbs)
         return Math.round(set.weight * 2.20462);
     };
 
@@ -47,35 +37,23 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
         onUpdate({ [field]: value });
     };
 
-    const handleWeightChange = (e) => {
-        setTempValue(e.target.value);
-    };
+    const handleWeightChange = (e) => { setTempValue(e.target.value); };
 
     const handleWeightFocus = () => {
-        prevWeightRef.current = set.weight; // Store current KG
-        setTempValue(''); // Clear input for "Auto-clear" feature
+        prevWeightRef.current = set.weight;
+        setTempValue('');
     };
 
     const handleWeightBlur = () => {
-        // If left empty, restore the previous value (KG)
         if (tempValue === '' || tempValue === null) {
             handleChange('weight', prevWeightRef.current);
             setTempValue(null);
             return;
         }
-
         const numVal = parseFloat(tempValue);
         let finalWeightKg = numVal;
-
-        if (preferredUnit !== 'KG') {
-            // Convert Input LBS -> Storage KG
-            // 1 lb = 0.453592 kg
-            finalWeightKg = numVal / 2.20462;
-        }
-
-        // Round to nearest 0.5 KG
+        if (preferredUnit !== 'KG') finalWeightKg = numVal / 2.20462;
         finalWeightKg = Math.round(finalWeightKg * 2) / 2;
-
         handleChange('weight', finalWeightKg);
         setTempValue(null);
     };
@@ -89,15 +67,8 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
         return set.reps;
     };
 
-    const handleRepsChange = (e) => {
-        setTempReps(e.target.value);
-    };
-
-    const handleRepsFocus = () => {
-        prevRepsRef.current = set.reps;
-        setTempReps('');
-    };
-
+    const handleRepsChange = (e) => { setTempReps(e.target.value); };
+    const handleRepsFocus = () => { prevRepsRef.current = set.reps; setTempReps(''); };
     const handleRepsBlur = () => {
         if (tempReps === '' || tempReps === null) {
             handleChange('reps', prevRepsRef.current);
@@ -108,14 +79,29 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
         setTempReps(null);
     };
 
+    // Stamp unilateral:true on L/R completion so volume calc is correct
+    const handleSide = (side) => {
+        const newLeft = side === 'left' ? !(set.leftDone ?? false) : (set.leftDone ?? false);
+        const newRight = side === 'right' ? !(set.rightDone ?? false) : (set.rightDone ?? false);
+        onUpdate({ leftDone: newLeft, rightDone: newRight, completed: newLeft && newRight, unilateral: true });
+    };
+
+    const oneSideDone = (set.leftDone || set.rightDone) && !set.completed;
+    const wideCol = showUnilateral || exerciseIsUnilateral;
+    const gridCols = wideCol ? '2rem 1fr 1fr 76px' : '2rem 1fr 1fr 36px';
+
+    const rowBg = set.completed
+        ? (isPR ? 'rgba(234, 179, 8, 0.15)' : 'rgba(16, 185, 129, 0.1)')
+        : oneSideDone ? 'rgba(16, 185, 129, 0.05)' : 'transparent';
+
     return (
         <div style={{
             display: 'grid',
-            gridTemplateColumns: '2rem 1fr 1fr 36px',
+            gridTemplateColumns: gridCols,
             gap: '0.5rem',
             alignItems: 'center',
             marginBottom: '0.5rem',
-            backgroundColor: set.completed ? (isPR ? 'rgba(234, 179, 8, 0.15)' : 'rgba(16, 185, 129, 0.1)') : 'transparent',
+            backgroundColor: rowBg,
             padding: '0.5rem',
             borderRadius: 'var(--radius-sm)',
             border: isPR && set.completed ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid transparent',
@@ -133,11 +119,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{
-                    color: 'var(--text-muted)',
-                    fontSize: '0.8rem',
-                    fontWeight: 'bold'
-                }}>{index + 1}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold' }}>{index + 1}</span>
                 {isPR && set.completed && <Trophy size={12} color="#eab308" className="pr-celebration" style={{ marginTop: 2 }} />}
             </div>
 
@@ -185,27 +167,59 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR }) {
                 <span style={{ position: 'absolute', right: 8, top: 10, fontSize: '0.7em', color: 'var(--text-muted)' }}>REPS</span>
             </div>
 
-            <motion.button
-                layout
-                whileTap={{ scale: 0.8 }}
-                animate={{
-                    scale: set.completed ? [1, 1.2, 1] : 1,
-                    backgroundColor: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'rgba(255,255,255,0.1)'
-                }}
-                transition={{ duration: 0.2 }}
-                className="btn"
-                style={{
-                    padding: '0.5rem',
-                    color: set.completed ? '#000' : 'var(--text-primary)',
-                    border: 'none',
-                    width: '36px',
-                    height: '36px',
-                    zIndex: 1
-                }}
-                onClick={handleToggleComplete}
-            >
-                <Check size={18} />
-            </motion.button>
+            {showUnilateral ? (
+                <div style={{ display: 'flex', gap: '4px', zIndex: 1 }}>
+                    {[['L', 'left', set.leftDone ?? false], ['R', 'right', set.rightDone ?? false]].map(([label, side, done]) => (
+                        <motion.button
+                            key={side}
+                            whileTap={{ scale: 0.8 }}
+                            animate={{
+                                backgroundColor: done
+                                    ? (set.completed && isPR ? '#eab308' : 'var(--color-success)')
+                                    : 'rgba(255,255,255,0.1)'
+                            }}
+                            transition={{ duration: 0.2 }}
+                            className="btn"
+                            style={{
+                                padding: 0,
+                                width: '36px',
+                                height: '36px',
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                color: done ? '#000' : 'var(--text-muted)',
+                                border: 'none',
+                                flexShrink: 0
+                            }}
+                            onClick={() => handleSide(side)}
+                        >
+                            {label}
+                        </motion.button>
+                    ))}
+                </div>
+            ) : (
+                <motion.button
+                    layout
+                    whileTap={{ scale: 0.8 }}
+                    animate={{
+                        scale: set.completed ? [1, 1.2, 1] : 1,
+                        backgroundColor: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'rgba(255,255,255,0.1)'
+                    }}
+                    transition={{ duration: 0.2 }}
+                    className="btn"
+                    style={{
+                        padding: '0.5rem',
+                        color: set.completed ? '#000' : 'var(--text-primary)',
+                        border: 'none',
+                        // Stretch to full 76px when inside a unilateral exercise for alignment
+                        width: exerciseIsUnilateral ? '76px' : '36px',
+                        height: '36px',
+                        zIndex: 1
+                    }}
+                    onClick={handleToggleComplete}
+                >
+                    <Check size={18} />
+                </motion.button>
+            )}
         </div>
     );
 }
