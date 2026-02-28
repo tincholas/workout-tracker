@@ -5,6 +5,8 @@ import WorkoutComplete from './pages/WorkoutComplete';
 import HistoryHub from './pages/HistoryHub';
 import ExerciseAnalytics from './pages/ExerciseAnalytics';
 import Profile from './pages/Profile';
+import GoalsScreen from './pages/GoalsScreen';
+import GoalCompletedScreen from './pages/GoalCompletedScreen';
 import { Dumbbell, LineChart, User } from 'lucide-react';
 import { useWorkout } from './store/WorkoutContext';
 
@@ -47,6 +49,8 @@ function App() {
               </PageTransition>
             } />
             <Route path="/completed" element={<PageTransition><WorkoutComplete /></PageTransition>} />
+            <Route path="/goals" element={<PageTransition><GoalsScreen /></PageTransition>} />
+            <Route path="/goal-completed" element={<PageTransition><GoalCompletedScreen /></PageTransition>} />
             <Route path="/analytics" element={<PageTransition><ExerciseAnalytics /></PageTransition>} />
             <Route path="/profile" element={
               <PageTransition>

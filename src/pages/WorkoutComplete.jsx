@@ -8,9 +8,10 @@ import { shareWorkout } from '../utils/shareWorkout';
 import { useTranslation } from 'react-i18next';
 
 export default function WorkoutComplete() {
-    const { history, personalRecords, exercisePRs } = useWorkout();
+    const { history, personalRecords, exercisePRs, goals } = useWorkout();
     const navigate = useNavigate();
     const [stats, setStats] = useState({ consistency: 0, streak: 0, prStreak: 0, prs: [] });
+    const [completedGoals, setCompletedGoals] = useState([]);
     const { t } = useTranslation();
 
     useEffect(() => {
@@ -117,8 +118,17 @@ export default function WorkoutComplete() {
 
         setStats({ consistency, streak, prStreak, prs: newPrs });
 
+        // Find goals completed in this workout (exercise-type, completedAt = today)
+        const today = new Date().toISOString().split('T')[0];
+        const workoutCompletedGoals = (goals || []).filter(g =>
+            g.status === 'completed' &&
+            g.type === 'exercise' &&
+            g.completedAt === today
+        );
+        setCompletedGoals(workoutCompletedGoals);
+
         return () => clearInterval(interval);
-    }, [history, navigate, personalRecords, exercisePRs]);
+    }, [history, navigate, personalRecords, exercisePRs, goals]);
 
     return (
         <div className="page-container" style={{
@@ -248,6 +258,37 @@ export default function WorkoutComplete() {
             )
             }
 
+            {/* Goal Completed section */}
+            {completedGoals.length > 0 && (
+                <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.85 }}
+                    style={{ width: '100%', marginBottom: '2rem' }}
+                >
+                    <h3 style={{ marginBottom: '1rem' }}>🎯 {t('goal_completed')}</h3>
+                    <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        {completedGoals.map(g => {
+                            const days = Math.max(0, Math.floor((new Date() - new Date(g.createdAt)) / 86400000));
+                            const fmt = (v) => g.isCardio ? `${(v / 60).toFixed(1)} min` : `${v} kg`;
+                            return (
+                                <div key={g.id} className="card" style={{
+                                    padding: '1rem',
+                                    border: '1px solid rgba(34,197,94,0.3)',
+                                    background: 'rgba(34,197,94,0.08)'
+                                }}>
+                                    <div style={{ fontWeight: 'bold', marginBottom: '0.3rem' }}>{g.exerciseName}</div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                        <span>🎯 {fmt(g.targetValue)}</span>
+                                        <span>⏱ {days} {t('days_active')}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </motion.div>
+            )}
+
             <div style={{ width: '100%', maxWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <motion.button
                     initial={{ y: 20, opacity: 0 }}
@@ -258,7 +299,7 @@ export default function WorkoutComplete() {
                     style={{ width: '100%', padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-card)', color: 'var(--color-primary)' }}
                     onClick={() => {
                         const lastWorkout = history[history.length - 1];
-                        if (lastWorkout) shareWorkout(lastWorkout, personalRecords, exercisePRs);
+                        if (lastWorkout) shareWorkout(lastWorkout, personalRecords, exercisePRs, completedGoals);
                     }}
                 >
                     <Share2 size={20} /> {t('share_workout')}

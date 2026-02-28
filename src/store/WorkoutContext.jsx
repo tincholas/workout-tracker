@@ -17,6 +17,7 @@ export const WorkoutProvider = ({ children }) => {
     const [isInitialized, setIsInitialized] = useState(false);
     const [notificationPermission, setNotificationPermission] = useState('default');
     const [weightMoodLog, setWeightMoodLog] = useState([]);
+    const [goals, setGoals] = useState([]);
 
     // Notification permission check
     useEffect(() => {
@@ -52,6 +53,7 @@ export const WorkoutProvider = ({ children }) => {
                 const savedUnit = await getData('workout_unit_preference');
                 const savedTimer = await getData('workout_rest_timer');
                 const savedWeightMoodLog = await getData('weight_mood_log');
+                const savedGoals = await getData('goals');
 
                 // Resolve initialTypes:
                 // - Fresh install (null/empty)      → seed with all 4 defaults
@@ -84,6 +86,7 @@ export const WorkoutProvider = ({ children }) => {
                 if (savedUnit) setPreferredUnit(savedUnit);
                 if (savedTimer) setRestTimer(savedTimer);
                 if (savedWeightMoodLog) setWeightMoodLog(savedWeightMoodLog);
+                if (savedGoals) setGoals(savedGoals);
 
                 // --- History migration pipeline ---
                 let currentHistory = savedHistory || [];
@@ -225,7 +228,8 @@ export const WorkoutProvider = ({ children }) => {
         setData('workout_unit_preference', preferredUnit);
         setData('workout_rest_timer', restTimer);
         setData('weight_mood_log', weightMoodLog);
-    }, [history, activeWorkout, extraTypes, preferredUnit, restTimer, weightMoodLog, isInitialized]);
+        setData('goals', goals);
+    }, [history, activeWorkout, extraTypes, preferredUnit, restTimer, weightMoodLog, goals, isInitialized]);
 
 
     if (!isInitialized) {
@@ -267,6 +271,94 @@ export const WorkoutProvider = ({ children }) => {
     const getLastWeightMoodEntry = () => {
         if (weightMoodLog.length === 0) return null;
         return [...weightMoodLog].sort((a, b) => b.date.localeCompare(a.date))[0];
+    };
+
+    // ── Goals ────────────────────────────────────────────────────────────────
+
+    const addGoal = (goalData) => {
+        const goal = {
+            id: uuidv4(),
+            ...goalData,
+            createdAt: toDateStr(new Date()),
+            completedAt: null,
+            status: 'active'
+        };
+        setGoals(prev => [...prev, goal]);
+        return goal;
+    };
+
+    const deleteGoal = (id) => {
+        setGoals(prev => prev.filter(g => g.id !== id));
+    };
+
+    // Compute the live current value for a goal from history / weightMoodLog
+    const getGoalCurrentValue = (goal, historySnapshot, weightLogSnapshot) => {
+        const h = historySnapshot ?? history;
+        const wl = weightLogSnapshot ?? weightMoodLog;
+        if (goal.type === 'bodyweight') {
+            if (!wl || wl.length === 0) return goal.initialValue;
+            const latest = [...wl].sort((a, b) => b.date.localeCompare(a.date))[0];
+            return latest?.weight ?? goal.initialValue;
+        }
+        // Exercise goal
+        let best = goal.initialValue;
+        for (const w of h) {
+            for (const ex of (w.exercises || [])) {
+                if (ex.name !== goal.exerciseName) continue;
+                if (goal.isCardio) {
+                    if ((ex.accumulatedSeconds || 0) > best) best = ex.accumulatedSeconds;
+                } else {
+                    for (const s of (ex.sets || [])) {
+                        if (s.completed && s.weight > best) best = s.weight;
+                    }
+                }
+            }
+        }
+        return best;
+    };
+
+    // Returns array of newly-completed goal objects (mutates goals state)
+    const checkGoalCompletions = (newHistoryEntry, newWeightEntry) => {
+        const today = toDateStr(new Date());
+        const newlyCompleted = [];
+
+        // Compute eagerly against the current goals snapshot so the return value
+        // is populated synchronously — setGoals updaters run lazily at render time.
+        const updatedGoals = goals.map(g => {
+            if (g.status !== 'active') return g;
+
+            let currentValue;
+            if (g.type === 'bodyweight' && newWeightEntry) {
+                currentValue = newWeightEntry.weight;
+            } else if (g.type === 'exercise' && newHistoryEntry) {
+                currentValue = g.initialValue;
+                const ex = newHistoryEntry.exercises?.find(e => e.name === g.exerciseName);
+                if (ex) {
+                    if (g.isCardio) {
+                        currentValue = ex.accumulatedSeconds || 0;
+                    } else {
+                        const best = Math.max(...(ex.sets || []).filter(s => s.completed).map(s => s.weight), 0);
+                        if (best > 0) currentValue = best;
+                    }
+                }
+            } else {
+                return g; // Not triggered by this event
+            }
+
+            const isComplete = g.targetValue > g.initialValue
+                ? currentValue >= g.targetValue
+                : currentValue <= g.targetValue;
+
+            if (isComplete) {
+                const completed = { ...g, status: 'completed', completedAt: today };
+                newlyCompleted.push(completed);
+                return completed;
+            }
+            return g;
+        });
+
+        setGoals(updatedGoals);
+        return newlyCompleted;
     };
 
     const createCustomType = (name, color, icon) => {
@@ -410,8 +502,11 @@ export const WorkoutProvider = ({ children }) => {
         };
         // splitId is already on activeWorkout from startWorkout; it carries through here.
 
-        setHistory([...history, completed]);
+        const newHistory = [...history, completed];
+        setHistory(newHistory);
         setActiveWorkout(null);
+        // Check exercise goal completions with the finished workout
+        checkGoalCompletions(completed, null);
     };
 
     const cancelWorkout = () => {
@@ -662,7 +757,12 @@ export const WorkoutProvider = ({ children }) => {
             weightMoodLog,
             trackWeightMood,
             getWeightMoodForDate,
-            getLastWeightMoodEntry
+            getLastWeightMoodEntry,
+            goals,
+            addGoal,
+            deleteGoal,
+            getGoalCurrentValue,
+            checkGoalCompletions
         }}>
             {children}
         </WorkoutContext.Provider>

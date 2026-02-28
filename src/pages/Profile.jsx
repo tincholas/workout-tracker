@@ -1,10 +1,11 @@
 import React, { useMemo, useRef } from 'react';
 import { useWorkout } from '../store/WorkoutContext';
+import { useNavigate } from 'react-router-dom';
 import { getAllData, importData, clearData } from '../store/db';
 import {
     Flame, CheckCircle, Calendar, TrendingUp, BarChart2,
     Download, Upload, Trash2, RefreshCw, Globe, Sun, Moon,
-    Dumbbell, Monitor
+    Dumbbell, Monitor, Target
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -71,8 +72,10 @@ function SettingRow({ children }) {
 
 export default function Profile() {
     const { preferredUnit, toggleUnit, restTimer, setRestTimer,
-        notificationPermission, requestNotificationPermission, history } = useWorkout();
+        notificationPermission, requestNotificationPermission, history,
+        goals, getGoalCurrentValue } = useWorkout();
     const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
     const fileInputRef = useRef(null);
     const [theme, setThemeState] = React.useState(getTheme);
 
@@ -133,6 +136,21 @@ export default function Profile() {
 
         return { streak, consistency, prStreak, thisMonthCount, thisYearCount, avgPerMonth };
     }, [history]);
+
+    // Goals summary
+    const goalStats = useMemo(() => {
+        const active = (goals || []).filter(g => g.status === 'active');
+        const completed = (goals || []).filter(g => g.status === 'completed');
+        if (active.length === 0) return { activeCount: 0, avgPct: 0, completedCount: completed.length };
+        const pcts = active.map(g => {
+            const current = getGoalCurrentValue(g);
+            const range = g.targetValue - g.initialValue;
+            if (range === 0) return 100;
+            return Math.min(100, Math.max(0, Math.round(((current - g.initialValue) / range) * 100)));
+        });
+        const avgPct = Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
+        return { activeCount: active.length, avgPct, completedCount: completed.length };
+    }, [goals, getGoalCurrentValue]);
 
     // ── Data Management ──────────────────────────────────────────────────────
     const handleExport = async () => {
@@ -229,6 +247,34 @@ export default function Profile() {
                             label={t('avg_per_month')}
                             color="#ec4899"
                         />
+                    </div>
+
+                    {/* Goals sub-row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0' }}>
+                        <div
+                            className="card"
+                            onClick={() => navigate('/goals')}
+                            style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                        >
+                            <div style={{ color: '#22c55e' }}><Target size={24} /></div>
+                            <span style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: 1 }}>
+                                {goalStats.activeCount > 0 ? `${goalStats.avgPct}%` : goalStats.activeCount}
+                            </span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textAlign: 'center', lineHeight: 1.3 }}>
+                                {t('active_goals')}
+                            </span>
+                        </div>
+                        <div
+                            className="card"
+                            onClick={() => navigate('/goals')}
+                            style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+                        >
+                            <div style={{ color: '#eab308' }}><CheckCircle size={24} /></div>
+                            <span style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: 1 }}>{goalStats.completedCount}</span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textAlign: 'center', lineHeight: 1.3 }}>
+                                {t('completed_goals')}
+                            </span>
+                        </div>
                     </div>
                 </Section>
             )}

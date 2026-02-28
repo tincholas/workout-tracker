@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Scale, ChevronDown, ChevronUp } from 'lucide-react';
 import { useWorkout } from '../store/WorkoutContext';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -36,8 +37,9 @@ function displayToKg(val, unit) {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function WeightMoodTracker() {
-    const { trackWeightMood, getWeightMoodForDate, getLastWeightMoodEntry, preferredUnit } = useWorkout();
+    const { trackWeightMood, getWeightMoodForDate, getLastWeightMoodEntry, preferredUnit, checkGoalCompletions } = useWorkout();
     const { t } = useTranslation();
+    const navigate = useNavigate();
 
     const todayStr = toDateStr(new Date());
     const todayEntry = getWeightMoodForDate(todayStr);
@@ -100,8 +102,17 @@ export default function WeightMoodTracker() {
 
     const handleTrack = () => {
         const kg = displayToKg(parseFloat(displayWeight) || DEFAULT_WEIGHT_KG, preferredUnit);
-        trackWeightMood(Math.round(kg * 1000) / 1000, mood);
+        const weightKg = Math.round(kg * 1000) / 1000;
+        trackWeightMood(weightKg, mood);
         setExpanded(false);
+
+        // Check if any bodyweight goals are now completed
+        const newWeightEntry = { weight: weightKg };
+        const completed = checkGoalCompletions(null, newWeightEntry);
+        const bwGoal = completed.find(g => g.type === 'bodyweight');
+        if (bwGoal) {
+            navigate('/goal-completed', { state: { goal: bwGoal, preferredUnit } });
+        }
     };
 
     // ── Summary values for the collapsed row ──

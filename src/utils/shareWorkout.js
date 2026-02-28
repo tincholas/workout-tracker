@@ -1,4 +1,4 @@
-export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = {}) => {
+export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = {}, completedGoals = []) => {
     const date = new Date(workout.endTime).toLocaleDateString();
     let text = `🏋️ ${workout.name} (${date})\n\n`;
 
@@ -31,6 +31,16 @@ export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = 
         }
         text += `\n`;
     });
+
+    if (completedGoals.length > 0) {
+        text += `🎯 Goal${completedGoals.length > 1 ? 's' : ''} Completed!\n`;
+        completedGoals.forEach(g => {
+            const fmt = (v) => g.isCardio ? `${(v / 60).toFixed(1)} min` : `${v} kg`;
+            const days = Math.max(0, Math.floor((new Date() - new Date(g.createdAt)) / 86400000));
+            text += `   • ${g.exerciseName}: ${fmt(g.targetValue)} (after ${days} days)\n`;
+        });
+        text += `\n`;
+    }
 
     if (navigator.share) {
         try {
