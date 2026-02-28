@@ -236,15 +236,52 @@ export default function WeightMoodTracker() {
                                 </span>
                             ))}
                         </div>
-                        <input
-                            type="range"
-                            min={0}
-                            max={4}
-                            step={1}
-                            value={mood}
-                            onChange={e => setMood(Number(e.target.value))}
-                            style={{ width: '100%', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-                        />
+                        <div
+                            style={{ position: 'relative', height: '36px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                            onClick={e => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                                setMood(Math.round(ratio * 4));
+                            }}
+                        >
+                            {/* Sunken track */}
+                            <div style={{
+                                position: 'absolute', left: 0, right: 0, height: '8px',
+                                borderRadius: '4px',
+                                boxShadow: 'inset 3px 3px 6px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light)',
+                                background: 'var(--bg-app)',
+                                overflow: 'hidden'
+                            }}>
+                                {/* Filled portion */}
+                                <div style={{
+                                    height: '100%',
+                                    width: `${(mood / 4) * 100}%`,
+                                    background: `linear-gradient(90deg, #64748b, var(--color-primary))`,
+                                    borderRadius: '4px',
+                                    transition: 'width 0.15s ease'
+                                }} />
+                            </div>
+
+                            {/* Thumb */}
+                            <div style={{
+                                position: 'absolute',
+                                left: `calc(${(mood / 4) * 100}% - 11px)`,
+                                width: '22px', height: '22px',
+                                borderRadius: '50%',
+                                background: 'var(--bg-card)',
+                                boxShadow: 'var(--shadow-convex)',
+                                border: '2px solid var(--color-primary)',
+                                transition: 'left 0.15s ease',
+                                pointerEvents: 'none'
+                            }} />
+
+                            {/* Hidden native input for keyboard a11y */}
+                            <input
+                                type="range" min={0} max={4} step={1} value={mood}
+                                onChange={e => setMood(Number(e.target.value))}
+                                style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }}
+                            />
+                        </div>
                     </div>
 
                     {/* Track button */}
