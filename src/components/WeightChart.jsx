@@ -25,24 +25,51 @@ export default function WeightChart({ currentMonth, currentYear, disableAnimatio
 
         if (entries.length === 0) return null;
 
+        // Build date→display-value map from the FULL log (needed for rolling avg at month start)
+        const allByDate = {};
+        weightMoodLog.forEach(e => {
+            if (e.weight == null) return;
+            const kgVal = e.weight;
+            allByDate[e.date] = preferredUnit === 'LBS'
+                ? Math.round(kgVal * KG_TO_LBS * 10) / 10
+                : Math.round(kgVal * 10) / 10;
+        });
+
         // Build sparse point array — null for days with no entry
         const dataPoints = new Array(daysInMonth).fill(null);
         entries.forEach(e => {
-            const day = parseInt(e.date.slice(8), 10); // YYYY-MM-DD, day part
-            const kgVal = e.weight;
-            const display = preferredUnit === 'LBS'
-                ? Math.round(kgVal * KG_TO_LBS * 10) / 10
-                : Math.round(kgVal * 10) / 10;
-            dataPoints[day - 1] = display;
+            const day = parseInt(e.date.slice(8), 10);
+            dataPoints[day - 1] = allByDate[e.date];
         });
+
+        // Compute 7-day rolling average for each day of the month
+        const rollingAvg = new Array(daysInMonth).fill(null);
+        for (let i = 0; i < daysInMonth; i++) {
+            const dayNum = i + 1;
+            const windowVals = [];
+            for (let d = dayNum - 6; d <= dayNum; d++) {
+                let dateStr;
+                if (d <= 0) {
+                    // Day falls in previous month
+                    const prevDate = new Date(currentYear, currentMonth, d);
+                    dateStr = prevDate.toISOString().slice(0, 10);
+                } else {
+                    dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                }
+                if (allByDate[dateStr] != null) windowVals.push(allByDate[dateStr]);
+            }
+            if (windowVals.length >= 2) {
+                rollingAvg[i] = Math.round((windowVals.reduce((a, b) => a + b, 0) / windowVals.length) * 10) / 10;
+            }
+        }
 
         const labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
         const unit = preferredUnit === 'LBS' ? 'lbs' : 'kg';
 
         // Gradient colour for the line
-        const color = '#a855f7'; // purple — matches the theme's primary on light, distinct on dark
+        const color = '#a855f7';
 
-        return { labels, dataPoints, unit, color };
+        return { labels, dataPoints, rollingAvg, unit, color };
     }, [weightMoodLog, currentMonth, currentYear, preferredUnit]);
 
     // Dashed horizontal target line for each active bodyweight goal
@@ -87,6 +114,19 @@ export default function WeightChart({ currentMonth, currentYear, disableAnimatio
                 fill: true,
                 spanGaps: true,
             },
+            {
+                label: t('rolling_avg_7d', { defaultValue: '7d avg' }),
+                data: chartData.rollingAvg,
+                borderColor: '#f97316',
+                backgroundColor: 'transparent',
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                borderWidth: 1.5,
+                borderDash: [4, 3],
+                tension: 0.35,
+                fill: false,
+                spanGaps: false,
+            },
             ...goalLines
         ]
     };
@@ -108,7 +148,15 @@ export default function WeightChart({ currentMonth, currentYear, disableAnimatio
         maintainAspectRatio: false,
         animation: { duration: disableAnimation ? 0 : 800 },
         plugins: {
-            legend: { display: goalLines.length > 0, labels: { color: textMuted, boxWidth: 12, filter: item => item.datasetIndex > 0 } },
+            legend: {
+                display: true,
+                labels: {
+                    color: textMuted,
+                    boxWidth: 12,
+                    // Show rolling avg label; show goal lines; hide the raw weight line (index 0)
+                    filter: item => item.datasetIndex !== 0
+                }
+            },
             tooltip: {
                 callbacks: {
                     label: (ctx) => `${ctx.parsed.y} ${chartData.unit}`
