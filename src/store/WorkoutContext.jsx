@@ -549,13 +549,25 @@ export const WorkoutProvider = ({ children }) => {
             target = exerciseOrName.target || findTarget(name);
         }
 
-        // Default unilateral from the most recent history entry for this exercise
+        // Find the most recent history entry for this exercise
         const lastEntry = [...history].reverse()
             .flatMap(w => w.exercises)
             .find(e => e.name === name);
         const unilateral = lastEntry?.unilateral ?? false;
 
-        const newExercise = { ...createExercise(name, target), unilateral };
+        // Build the new exercise, pre-filling sets with last session's weight/reps
+        const baseExercise = createExercise(name, target);
+        if (lastEntry?.sets?.length > 0) {
+            const lastSets = lastEntry.sets.filter(s => s.completed);
+            if (lastSets.length > 0) {
+                baseExercise.sets = lastSets.map(s => ({
+                    ...createSet(s.weight, s.reps),
+                    unilateral: false, // not-yet-completed; will be toggled via menu if needed
+                }));
+            }
+        }
+
+        const newExercise = { ...baseExercise, unilateral };
 
         setActiveWorkout({
             ...activeWorkout,
