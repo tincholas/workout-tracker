@@ -64,9 +64,23 @@ function GoalCard({ goal, onDelete, preferredUnit, currentValue }) {
             </div>
 
             {/* Stats row */}
-            <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
+            <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.65rem', flexWrap: 'wrap' }}>
                 <span>🏁 {formatValue(goal.initialValue, goal, preferredUnit)}</span>
                 <span>🎯 {formatValue(goal.targetValue, goal, preferredUnit)}</span>
+                {goal.type === 'bodyweight' && (() => {
+                    const delta = currentValue - goal.initialValue;
+                    const isLoss = delta < 0;
+                    const absDelta = preferredUnit === 'LBS'
+                        ? Math.round(Math.abs(delta) * KG_TO_LBS * 10) / 10
+                        : Math.round(Math.abs(delta) * 10) / 10;
+                    const unit = preferredUnit === 'LBS' ? 'lbs' : 'kg';
+                    const color = absDelta === 0 ? 'var(--text-muted)' : (isLoss ? '#22c55e' : '#eab308');
+                    return (
+                        <span style={{ color }}>
+                            {isLoss ? '↓' : delta > 0 ? '↑' : '—'} {absDelta} {unit}
+                        </span>
+                    );
+                })()}
                 <span>⏱ {days} {t('days_active')}</span>
             </div>
 
