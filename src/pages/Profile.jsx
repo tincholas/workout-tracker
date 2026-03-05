@@ -258,7 +258,7 @@ export default function Profile() {
                         >
                             <div style={{ color: '#22c55e' }}><Target size={24} /></div>
                             <span style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: 1 }}>
-                                {goalStats.activeCount > 0 ? `${goalStats.avgPct}%` : goalStats.activeCount}
+                                {goalStats.activeCount}
                             </span>
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textAlign: 'center', lineHeight: 1.3 }}>
                                 {t('active_goals')}

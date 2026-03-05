@@ -4,6 +4,7 @@ import WorkoutSession from './pages/WorkoutSession';
 import WorkoutComplete from './pages/WorkoutComplete';
 import HistoryHub from './pages/HistoryHub';
 import ExerciseAnalytics from './pages/ExerciseAnalytics';
+import BodyWeightHistory from './pages/BodyWeightHistory';
 import Profile from './pages/Profile';
 import GoalsScreen from './pages/GoalsScreen';
 import GoalCompletedScreen from './pages/GoalCompletedScreen';
@@ -52,6 +53,7 @@ function App() {
             <Route path="/goals" element={<PageTransition><GoalsScreen /></PageTransition>} />
             <Route path="/goal-completed" element={<PageTransition><GoalCompletedScreen /></PageTransition>} />
             <Route path="/analytics" element={<PageTransition><ExerciseAnalytics /></PageTransition>} />
+            <Route path="/body-weight" element={<PageTransition><BodyWeightHistory /></PageTransition>} />
             <Route path="/profile" element={
               <PageTransition>
                 <GestureLayout

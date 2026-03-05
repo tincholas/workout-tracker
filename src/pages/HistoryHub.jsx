@@ -26,7 +26,7 @@ export default function HistoryHub() {
             {/* Segmented Control */}
             <div style={{
                 padding: 'var(--space-md)',
-                paddingBottom: 0,
+                paddingBottom: '0.75rem',
                 position: 'sticky',
                 top: 0,
                 background: 'var(--bg-app)',
@@ -34,35 +34,42 @@ export default function HistoryHub() {
             }}>
                 <div style={{
                     display: 'flex',
-                    background: 'var(--bg-card)',
-                    borderRadius: '12px',
+                    background: 'var(--bg-app)',
+                    borderRadius: 'var(--radius-md)',
                     padding: '4px',
-                    gap: '4px'
+                    gap: '4px',
+                    boxShadow: 'var(--shadow-concave)',
                 }}>
                     {[
                         { key: 'calendar', label: t('calendar', { defaultValue: 'Calendar' }) },
-                        { key: 'exercises', label: t('exercise_history', { defaultValue: 'Exercises' }) }
-                    ].map(tab => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setActiveTab(tab.key)}
-                            style={{
-                                flex: 1,
-                                padding: '0.6rem 1rem',
-                                borderRadius: '9px',
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '0.9rem',
-                                transition: 'all 0.2s ease',
-                                background: activeTab === tab.key ? 'var(--color-primary)' : 'transparent',
-                                color: activeTab === tab.key ? '#000' : 'var(--text-muted)',
-                                boxShadow: activeTab === tab.key ? '0 2px 8px rgba(0,0,0,0.3)' : 'none'
-                            }}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
+                        { key: 'exercises', label: t('history', { defaultValue: 'History' }) }
+                    ].map(tab => {
+                        const isActive = activeTab === tab.key;
+                        return (
+                            <button
+                                key={tab.key}
+                                onClick={() => setActiveTab(tab.key)}
+                                style={{
+                                    flex: 1,
+                                    padding: '0.6rem 1rem',
+                                    borderRadius: 'calc(var(--radius-md) - 4px)',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    fontFamily: 'var(--font-family)',
+                                    transition: 'all 0.25s var(--ease-spring)',
+                                    background: isActive ? 'var(--color-primary)' : 'transparent',
+                                    color: isActive ? '#fff' : 'var(--text-muted)',
+                                    boxShadow: isActive ? 'var(--shadow-convex)' : 'none',
+                                    transform: isActive ? 'scale(1)' : 'scale(0.97)',
+                                    letterSpacing: isActive ? '0.01em' : 'normal',
+                                }}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 

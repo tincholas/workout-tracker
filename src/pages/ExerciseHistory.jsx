@@ -47,6 +47,24 @@ export default function ExerciseHistory({ embedded = false }) {
         }}>
             {!embedded && <h1 style={{ marginBottom: 'var(--space-md)' }}>{t('exercise_history')}</h1>}
 
+            {/* Body Weight shortcut */}
+            <div
+                className="card"
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    padding: '1rem',
+                    marginBottom: '1.5rem',
+                    borderLeft: '3px solid #a855f7',
+                }}
+                onClick={() => navigate('/body-weight')}
+            >
+                <span style={{ fontWeight: 600 }}>{t('body_weight', { defaultValue: 'Body Weight' })}</span>
+                <ChevronRight size={16} color="var(--text-muted)" />
+            </div>
+
             <div style={{ display: 'grid', gap: '1.5rem' }}>
                 {targets.map(target => (
                     <div key={target}>
