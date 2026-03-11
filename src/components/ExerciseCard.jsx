@@ -3,7 +3,7 @@ import SetRow from './SetRow';
 import CardioTimer from './CardioTimer';
 import RestTimer from './RestTimer';
 import { useWorkout } from '../store/WorkoutContext';
-import { RefreshCw, Plus, Minus, Trash2, MoreVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { RefreshCw, Plus, Minus, Trash2, MoreVertical, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -113,6 +113,20 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
                         {t(`exercises.${exercise.name}`, { defaultValue: exercise.name })}
                     </h3>
+                    <AnimatePresence>
+                        {isActualPR && (
+                            <motion.div
+                                key="pr-trophy"
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                                title="Personal Record!"
+                            >
+                                <Trophy size={18} color="#f59e0b" />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     <AnimatePresence>
                         {isResting && (
                             <motion.div

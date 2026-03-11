@@ -168,19 +168,25 @@ export default function BodyWeightHistory() {
 
     const handleChartTouchEnd = () => { touchRef.current = {}; };
 
-    // --- Y-axis bounds (include goal targets so they're always visible) ---
+    // --- Y-axis bounds — computed from the FULL dataset so the axis stays
+    //     fixed when the user pans or zooms. Goal targets are included so
+    //     they remain visible regardless of the current window.
     const yBinding = useMemo(() => {
-        if (!chartData) return {};
-        const rawVals = chartData.datasets[0].data.filter(v => v != null);
+        if (!allRawData) return {};
+        const rawVals = allRawData.points.map(p => p.value);
         if (rawVals.length === 0) return {};
-        // Also include any goal target values
-        const goalVals = chartData.datasets.slice(2).map(ds => ds.data[0]).filter(v => v != null);
+        // Also include any active bodyweight goal target values
+        const goalVals = (goals || [])
+            .filter(g => g.status === 'active' && g.type === 'bodyweight')
+            .map(g => preferredUnit === 'LBS'
+                ? Math.round(g.targetValue * KG_TO_LBS * 10) / 10
+                : Math.round(g.targetValue * 10) / 10);
         const allVals = [...rawVals, ...goalVals];
         const minVal = Math.min(...allVals);
         const maxVal = Math.max(...allVals);
         const pad = Math.max((maxVal - minVal) * 0.4, 2);
         return { min: Math.floor(minVal - pad), max: Math.ceil(maxVal + pad) };
-    }, [chartData]);
+    }, [allRawData, goals, preferredUnit]);
 
     const options = {
         responsive: true,

@@ -561,8 +561,13 @@ export const WorkoutProvider = ({ children }) => {
             const lastSets = lastEntry.sets.filter(s => s.completed);
             if (lastSets.length > 0) {
                 baseExercise.sets = lastSets.map(s => ({
-                    ...createSet(s.weight, s.reps),
-                    unilateral: false, // not-yet-completed; will be toggled via menu if needed
+                    id: uuidv4(),
+                    weight: s.weight,
+                    reps: s.reps,
+                    completed: false,
+                    leftDone: false,
+                    rightDone: false,
+                    unilateral: s.unilateral ?? false,
                 }));
             }
         }

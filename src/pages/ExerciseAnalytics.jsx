@@ -56,8 +56,11 @@ export default function ExerciseAnalytics() {
             if (ex.target === 'Cardio') {
                 val = Number(((ex.accumulatedSeconds || 0) / 60).toFixed(2));
             } else {
-                val = ex.sets.reduce((acc, s) =>
-                    s.completed ? acc + ((Number(s.weight) || 0) * (Number(s.reps) || 0)) : acc, 0);
+                val = ex.sets.reduce((acc, s) => {
+                    if (!s.completed) return acc;
+                    const setVol = (Number(s.weight) || 0) * (Number(s.reps) || 0);
+                    return acc + (s.unilateral ? setVol * 2 : setVol);
+                }, 0);
             }
             if (!dateValuesMap[dateKey]) dateValuesMap[dateKey] = {};
             dateValuesMap[dateKey][ex.name] = (dateValuesMap[dateKey][ex.name] || 0) + val;
@@ -183,6 +186,8 @@ export default function ExerciseAnalytics() {
         let maxSetVolume = 0;
         let bestSetWeight = 0;  // weight of the best set
         let bestSetReps = 0;    // reps of the best set
+        let best1RMWeight = 0;  // weight used for 1RM estimate
+        let best1RMReps = 0;    // reps used for 1RM estimate
         let maxWorkoutVolume = 0;
 
         history.forEach(w => {
@@ -200,6 +205,12 @@ export default function ExerciseAnalytics() {
                         bestSetWeight = w;
                         bestSetReps = r;
                     }
+                    // Best Epley 1RM: weight * (1 + reps/30) — only valid for r >= 1
+                    if (r >= 1) {
+                        const est = w * (1 + r / 30);
+                        const currentBest = best1RMWeight * (1 + best1RMReps / 30);
+                        if (est > currentBest) { best1RMWeight = w; best1RMReps = r; }
+                    }
                     sessionVolume += setVol;
                 });
             });
@@ -214,11 +225,18 @@ export default function ExerciseAnalytics() {
         const displayBestSetWeight = preferredUnit === 'KG'
             ? bestSetWeight
             : Math.round(bestSetWeight * 2.20462);
+        const display1RMWeight = preferredUnit === 'KG'
+            ? best1RMWeight
+            : Math.round(best1RMWeight * 2.20462);
+        const est1RM = best1RMWeight > 0
+            ? Math.round(display1RMWeight * (1 + best1RMReps / 30))
+            : null;
 
         return {
             maxWeight: displayWeight,
             bestSet: `${bestSetReps} × ${displayBestSetWeight} ${preferredUnit}`,
             maxWorkoutVolume: Math.round(maxWorkoutVolume),
+            est1RM,
             unit: preferredUnit
         };
     }, [history, exerciseName, preferredUnit]);
@@ -357,15 +375,16 @@ export default function ExerciseAnalytics() {
 
             {/* PR Stats — single exercise only */}
             {prs && !targetGroup && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
                     {[
                         { label: t('pr_max_weight', { defaultValue: 'Max Weight' }), value: `${prs.maxWeight} ${prs.unit}` },
                         { label: t('pr_max_set_volume', { defaultValue: 'Best Set' }), value: prs.bestSet },
                         { label: t('pr_max_workout_volume', { defaultValue: 'Best Session' }), value: `${prs.maxWorkoutVolume} KG` },
-                    ].map(({ label, value }) => (
+                        ...(prs.est1RM != null ? [{ label: t('est_1rm', { defaultValue: 'Est. 1RM' }), value: `~${prs.est1RM} ${prs.unit}`, muted: true }] : []),
+                    ].map(({ label, value, muted }) => (
                         <div key={label} className="card" style={{ padding: '0.75rem', textAlign: 'center' }}>
                             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{label}</div>
-                            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#f59e0b' }}>{value}</div>
+                            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: muted ? 'var(--text-muted)' : '#f59e0b' }}>{value}</div>
                         </div>
                     ))}
                 </div>

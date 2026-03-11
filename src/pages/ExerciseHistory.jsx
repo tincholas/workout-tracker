@@ -1,14 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { EXERCISE_TYPES, WORKOUT_TEMPLATES } from '../store/models';
 import { useWorkout as useWorkoutContext } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function ExerciseHistory({ embedded = false }) {
     const { history } = useWorkoutContext();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const [search, setSearch] = useState('');
 
     // Get unique exercises grouped by Target
     const exercisesByTarget = useMemo(() => {
@@ -36,7 +37,22 @@ export default function ExerciseHistory({ embedded = false }) {
         return map;
     }, [history]);
 
-    const targets = Object.keys(exercisesByTarget).sort();
+    const query = search.trim().toLowerCase();
+
+    // Filtered view: only keep exercises matching the search query
+    const filteredByTarget = useMemo(() => {
+        if (!query) return exercisesByTarget;
+        const result = {};
+        for (const [target, names] of Object.entries(exercisesByTarget)) {
+            const matched = Array.from(names).filter(n =>
+                t(`exercises.${n}`, { defaultValue: n }).toLowerCase().includes(query)
+            );
+            if (matched.length > 0) result[target] = new Set(matched);
+        }
+        return result;
+    }, [exercisesByTarget, query, t]);
+
+    const targets = Object.keys(filteredByTarget).sort();
 
     const content = (
         <div style={{
@@ -46,6 +62,29 @@ export default function ExerciseHistory({ embedded = false }) {
             ...(embedded ? {} : { backgroundColor: 'var(--bg-app)', minHeight: '100vh' })
         }}>
             {!embedded && <h1 style={{ marginBottom: 'var(--space-md)' }}>{t('exercise_history')}</h1>}
+
+            {/* Search bar */}
+            <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
+                <Search
+                    size={16}
+                    style={{
+                        position: 'absolute',
+                        left: '0.85rem',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: 'var(--text-muted)',
+                        pointerEvents: 'none'
+                    }}
+                />
+                <input
+                    className="input"
+                    type="text"
+                    placeholder={t('search_exercises', { defaultValue: 'Search exercises…' })}
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    style={{ paddingLeft: '2.25rem', width: '100%', boxSizing: 'border-box' }}
+                />
+            </div>
 
             {/* Body Weight shortcut */}
             <div
@@ -86,7 +125,7 @@ export default function ExerciseHistory({ embedded = false }) {
                             {t(`muscle_groups.${target}`, { defaultValue: target })}
                         </h3>
                         <div style={{ display: 'grid', gap: '0.5rem' }}>
-                            {Array.from(exercisesByTarget[target]).sort().map(name => (
+                            {Array.from(filteredByTarget[target]).sort().map(name => (
                                 <div
                                     key={name}
                                     className="card"

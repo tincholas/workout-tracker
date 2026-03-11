@@ -23,11 +23,14 @@ export default function CreateGoalModal({ onClose }) {
 
     // Build merged exercise list: database + anything in history not already there
     const allExercises = useMemo(() => {
-        const dbNames = new Set(EXERCISE_DATABASE.map(e => e.name));
+        const seen = new Set(EXERCISE_DATABASE.map(e => e.name));
         const fromHistory = [];
         for (const w of history) {
             for (const ex of (w.exercises || [])) {
-                if (!dbNames.has(ex.name)) fromHistory.push({ name: ex.name, target: ex.target || 'Other' });
+                if (!seen.has(ex.name)) {
+                    seen.add(ex.name);
+                    fromHistory.push({ name: ex.name, target: ex.target || 'Other' });
+                }
             }
         }
         return [...EXERCISE_DATABASE, ...fromHistory];
