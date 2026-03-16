@@ -43,7 +43,7 @@ export default function MuscleGroupPieChart({ history }) {
         return {
             labels: targets.map(target => t(`muscle_groups.${target}`, { defaultValue: target })),
             datasets: [{
-                data: targets.map(target => setsByTarget[target]),
+                data: targets.map(target => Math.round((setsByTarget[target] / 4) * 10) / 10),
                 backgroundColor: targets.map(target => `${getColor(target)}cc`),
                 borderColor: targets.map(target => getColor(target)),
                 borderWidth: 1.5,
@@ -70,7 +70,7 @@ export default function MuscleGroupPieChart({ history }) {
                     label: (ctx) => {
                         const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                         const pct = total > 0 ? Math.round((ctx.parsed / total) * 100) : 0;
-                        return ` ${ctx.parsed} sets (${pct}%)`;
+                        return ` ${ctx.parsed} sets/wk (${pct}%)`;
                     },
                 },
             },
