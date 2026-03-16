@@ -32,4 +32,4 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: /public_html/tracker  # Change to a subfolder if needed, e.g. /public_html/workout/
+          server-dir: /public_html/tracker/  # Change to a subfolder if needed, e.g. /public_html/workout/
