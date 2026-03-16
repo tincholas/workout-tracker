@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Changelog
+        run: node scripts/generate-changelog.js
+
       - name: Build
         run: npm run build
 
@@ -32,7 +37,7 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add package.json
+          git add package.json src/assets/changelog.json
           # Only commit if there are changes (avoids errors)
           git diff-index --quiet HEAD || git commit -m "chore: bump version [skip ci]"
           git push

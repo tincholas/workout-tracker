@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import WorkoutSession from './pages/WorkoutSession';
@@ -15,13 +16,67 @@ import { AnimatePresence } from 'framer-motion';
 import PageTransition from './components/PageTransition';
 import GestureLayout from './components/GestureLayout';
 import ScrollToTop from './components/ScrollToTop';
+import ChangelogModal from './components/ChangelogModal';
 
 function App() {
   const location = useLocation();
   const { activeWorkout } = useWorkout();
+  const [newReleases, setNewReleases] = useState(null);
+
+  useEffect(() => {
+    try {
+      const lastSeen = localStorage.getItem('lastSeenVersion');
+      const current = __APP_VERSION__;
+
+      if (!lastSeen) {
+        // First time load ever, don't show changelog
+        localStorage.setItem('lastSeenVersion', current);
+      } else if (lastSeen !== current) {
+        // Version changed, let's see if it's newer
+        // (Basic string comparison works ok for x.y.z if they have same digit lengths, 
+        // but simple inequality is usually enough since we only go up)
+
+        // Dynamically import to save bundle size on normal loads
+        import('./assets/changelog.json').then(module => {
+          const changelog = module.default || module;
+          const unread = changelog.filter(release => {
+            // Very simple version compare
+            const vUnread = release.version.split('.').map(Number);
+            const vSeen = lastSeen.split('.').map(Number);
+            for (let i = 0; i < 3; i++) {
+              if (vUnread[i] > (vSeen[i] || 0)) return true;
+              if (vUnread[i] < (vSeen[i] || 0)) return false;
+            }
+            return false;
+          });
+
+          if (unread.length > 0) {
+            setNewReleases(unread);
+          } else {
+            // Nothing new in the JSON (maybe just a patch with no notes), update silently
+            localStorage.setItem('lastSeenVersion', current);
+          }
+        }).catch(err => {
+          console.error("Failed to load changelog:", err);
+          localStorage.setItem('lastSeenVersion', current);
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   return (
     <div className="app-container">
+      {newReleases && (
+        <ChangelogModal
+          newVersions={newReleases}
+          onClose={() => {
+            localStorage.setItem('lastSeenVersion', __APP_VERSION__);
+            setNewReleases(null);
+          }}
+        />
+      )}
       <ScrollToTop />
       <main style={{ flex: 1, paddingBottom: 'var(--navbar-clearance)' }}>
         <AnimatePresence mode="wait">
