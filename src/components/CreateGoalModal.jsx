@@ -16,6 +16,7 @@ export default function CreateGoalModal({ onClose }) {
     const { t } = useTranslation();
 
     const [goalType, setGoalType] = useState('bodyweight');
+    const [targetMetric, setTargetMetric] = useState('weight'); // 'weight' or 'reps'
     const [exerciseName, setExerciseName] = useState('');
     const [targetDisplay, setTargetDisplay] = useState('');
 
@@ -56,19 +57,22 @@ export default function CreateGoalModal({ onClose }) {
             return latest?.weight ?? 0;
         }
         if (!exerciseName) return 0;
-        const pseudoGoal = { type: 'exercise', exerciseName, isCardio, initialValue: 0 };
+        const pseudoGoal = { type: 'exercise', exerciseName, isCardio, targetMetric, initialValue: 0 };
         return getGoalCurrentValue(pseudoGoal);
-    }, [goalType, exerciseName, isCardio, weightMoodLog, getGoalCurrentValue]);
+    }, [goalType, exerciseName, isCardio, targetMetric, weightMoodLog, getGoalCurrentValue]);
 
     const displayInitial = useMemo(() => {
         if (goalType === 'bodyweight' || !isCardio) {
+            if (goalType === 'exercise' && targetMetric === 'reps') {
+                return `${initialValue} ${t('reps', { defaultValue: 'reps' })}`;
+            }
             const val = preferredUnit === 'LBS'
                 ? Math.round(initialValue * KG_TO_LBS * 10) / 10
                 : Math.round(initialValue * 10) / 10;
             return `${val} ${unit}`;
         }
         return `${(initialValue / 60).toFixed(1)} min`;
-    }, [initialValue, goalType, isCardio, preferredUnit, unit]);
+    }, [initialValue, goalType, isCardio, targetMetric, preferredUnit, unit, t]);
 
     const handleCreate = () => {
         const targetNum = parseFloat(targetDisplay);
@@ -83,6 +87,9 @@ export default function CreateGoalModal({ onClose }) {
         } else if (isCardio) {
             storedTarget = targetNum * 60; // minutes → seconds
             storedInitial = initialValue;
+        } else if (targetMetric === 'reps') {
+            storedTarget = targetNum; // raw reps
+            storedInitial = initialValue;
         } else {
             storedTarget = toKg(targetNum, preferredUnit);
             storedInitial = initialValue;
@@ -92,6 +99,7 @@ export default function CreateGoalModal({ onClose }) {
             type: goalType,
             exerciseName: goalType === 'exercise' ? exerciseName : null,
             isCardio: goalType === 'exercise' ? isCardio : false,
+            targetMetric: goalType === 'exercise' && !isCardio ? targetMetric : null,
             initialValue: storedInitial,
             targetValue: storedTarget,
         });
@@ -162,6 +170,25 @@ export default function CreateGoalModal({ onClose }) {
                     </div>
                 )}
 
+                {/* Metric selector for strength exercises */}
+                {goalType === 'exercise' && exerciseName && !isCardio && (
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <label style={labelStyle}>{t('target_metric', { defaultValue: 'Target Metric' })}</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {[['weight', t('weight', { defaultValue: 'Weight' })], ['reps', t('reps', { defaultValue: 'Reps' })]].map(([val, label]) => (
+                                <button
+                                    key={val}
+                                    onClick={() => { setTargetMetric(val); setTargetDisplay(''); }}
+                                    className={`btn ${targetMetric === val ? 'btn-primary' : ''}`}
+                                    style={{ flex: 1, justifyContent: 'center', padding: '0.6rem' }}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Current / initial value info */}
                 {(goalType === 'bodyweight' || exerciseName) && (
                     <div style={{ marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', background: 'var(--bg-app)', borderRadius: '8px', padding: '0.6rem 0.9rem' }}>
@@ -173,14 +200,20 @@ export default function CreateGoalModal({ onClose }) {
                 {(goalType === 'bodyweight' || exerciseName) && (
                     <div style={{ marginBottom: '1.5rem' }}>
                         <label style={labelStyle}>
-                            {t('target_value')} ({goalType === 'exercise' && isCardio ? 'min' : unit})
+                            {t('target_value')} (
+                            {goalType === 'exercise' && isCardio ? 'min' :
+                                (goalType === 'exercise' && targetMetric === 'reps' ? t('reps', { defaultValue: 'reps' }) : unit)}
+                            )
                         </label>
                         <input
                             className="input"
                             type="number"
                             min="0"
-                            step={goalType === 'exercise' && isCardio ? '1' : '0.1'}
-                            placeholder={goalType === 'exercise' && isCardio ? 'e.g. 20' : `e.g. ${preferredUnit === 'LBS' ? '132' : '60'}`}
+                            step={(goalType === 'exercise' && (isCardio || targetMetric === 'reps')) ? '1' : '0.1'}
+                            placeholder={
+                                goalType === 'exercise' && isCardio ? 'e.g. 20' :
+                                    (goalType === 'exercise' && targetMetric === 'reps' ? 'e.g. 15' : `e.g. ${preferredUnit === 'LBS' ? '132' : '60'}`)
+                            }
                             value={targetDisplay}
                             onChange={e => setTargetDisplay(e.target.value)}
                         />

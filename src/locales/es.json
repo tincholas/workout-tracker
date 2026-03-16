@@ -20,6 +20,7 @@
     "body_weight": "Peso Corporal",
     "exercise": "Ejercicio",
     "target_value": "Objetivo",
+    "target_metric": "Métrica de Objetivo",
     "initial_value": "Valor Inicial",
     "days_active": "Días Activo",
     "goal_completed": "¡Meta Completada! 🎯",

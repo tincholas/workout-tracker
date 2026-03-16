@@ -7,8 +7,11 @@ import CreateGoalModal from '../components/CreateGoalModal';
 
 const KG_TO_LBS = 2.20462;
 
-function formatValue(val, goal, preferredUnit) {
+function formatValue(val, goal, preferredUnit, t) {
     if (!goal) return String(val);
+    if (goal.type === 'exercise' && goal.targetMetric === 'reps') {
+        return `${val} ${t('reps', { defaultValue: 'reps' })}`;
+    }
     if (goal.type === 'bodyweight' || (goal.type === 'exercise' && !goal.isCardio)) {
         const display = preferredUnit === 'LBS'
             ? Math.round(val * KG_TO_LBS * 10) / 10
@@ -65,19 +68,32 @@ function GoalCard({ goal, onDelete, preferredUnit, currentValue }) {
 
             {/* Stats row */}
             <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.65rem', flexWrap: 'wrap' }}>
-                <span>🏁 {formatValue(goal.initialValue, goal, preferredUnit)}</span>
-                <span>🎯 {formatValue(goal.targetValue, goal, preferredUnit)}</span>
-                {goal.type === 'bodyweight' && (() => {
+                <span>🏁 {formatValue(goal.initialValue, goal, preferredUnit, t)}</span>
+                <span>🎯 {formatValue(goal.targetValue, goal, preferredUnit, t)}</span>
+                {(goal.type === 'bodyweight' || goal.targetMetric === 'reps') && (() => {
                     const delta = currentValue - goal.initialValue;
                     const isLoss = delta < 0;
-                    const absDelta = preferredUnit === 'LBS'
-                        ? Math.round(Math.abs(delta) * KG_TO_LBS * 10) / 10
-                        : Math.round(Math.abs(delta) * 10) / 10;
-                    const unit = preferredUnit === 'LBS' ? 'lbs' : 'kg';
+                    const absDelta = goal.targetMetric === 'reps'
+                        ? Math.abs(delta)
+                        : (preferredUnit === 'LBS'
+                            ? Math.round(Math.abs(delta) * KG_TO_LBS * 10) / 10
+                            : Math.round(Math.abs(delta) * 10) / 10);
+                    const localUnit = goal.targetMetric === 'reps' ? t('reps', { defaultValue: 'reps' }) : (preferredUnit === 'LBS' ? 'lbs' : 'kg');
                     const color = absDelta === 0 ? 'var(--text-muted)' : (isLoss ? '#22c55e' : '#eab308');
                     return (
-                        <span style={{ color }}>
-                            {isLoss ? '↓' : delta > 0 ? '↑' : '—'} {absDelta} {unit}
+                        <span style={{
+                            color: (() => {
+                                if (absDelta === 0) return 'var(--text-muted)';
+                                if (goal.targetMetric === 'reps') {
+                                    // For reps, higher is better
+                                    return isLoss ? '#eab308' : '#22c55e';
+                                }
+                                // For bodyweight, lower is "green" based on typical weight loss goals, but it could be weight gain. 
+                                // Keeping original bodyweight color logic
+                                return isLoss ? '#22c55e' : '#eab308';
+                            })()
+                        }}>
+                            {isLoss ? '↓' : delta > 0 ? '↑' : '—'} {absDelta} {localUnit}
                         </span>
                     );
                 })()}
