@@ -5,6 +5,9 @@ on:
     branches:
       - master  # Change this if your default branch has a different name
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
