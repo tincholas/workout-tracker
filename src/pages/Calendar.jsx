@@ -4,6 +4,7 @@ import { useWorkout } from '../store/WorkoutContext';
 import VolumeChart from '../components/VolumeChart';
 import CardioChart from '../components/CardioChart';
 import WeightChart from '../components/WeightChart';
+import MuscleGroupPieChart from '../components/MuscleGroupPieChart';
 import { shareWorkout } from '../utils/shareWorkout';
 import { ChevronLeft, ChevronRight, X, Share2, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -185,6 +186,18 @@ export default function Calendar({ embedded = false }) {
         return weightMoodLog.some(e => e.date.startsWith(prefix));
     }, [weightMoodLog, month, year]);
 
+    const hasPie28Data = useMemo(() => {
+        if (!history) return false;
+        const cutoff = Date.now() - 28 * 24 * 60 * 60 * 1000;
+        return history.some(w =>
+            new Date(w.endTime).getTime() >= cutoff &&
+            (w.exercises || []).some(ex =>
+                ex.target !== 'Cardio' &&
+                (ex.sets || []).some(s => s.completed)
+            )
+        );
+    }, [history]);
+
     const inner = (
         <div
             style={{
@@ -212,6 +225,15 @@ export default function Calendar({ embedded = false }) {
             >
                 {renderCalendar()}
             </div>
+
+            {hasPie28Data && (
+                <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
+                    <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>
+                        {t('sets_per_week', { defaultValue: 'Sets Per Week (28 days)' })}
+                    </h3>
+                    <MuscleGroupPieChart history={history} />
+                </div>
+            )}
 
             {hasSetsData && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
