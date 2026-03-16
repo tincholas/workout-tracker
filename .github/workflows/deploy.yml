@@ -3,7 +3,7 @@ name: Deploy to HostGator
 on:
   push:
     branches:
-      - main  # Change this if your default branch has a different name
+      - master  # Change this if your default branch has a different name
 
 jobs:
   deploy:
