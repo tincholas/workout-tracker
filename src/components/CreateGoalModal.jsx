@@ -117,7 +117,9 @@ export default function CreateGoalModal({ onClose }) {
             background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
         }}>
-            <div className="card" style={{
+            <div style={{
+                background: 'var(--bg-app)',
+                boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
                 width: '100%', maxWidth: '600px',
                 borderRadius: '20px 20px 0 0',
                 padding: '1.5rem',
@@ -174,13 +176,28 @@ export default function CreateGoalModal({ onClose }) {
                 {goalType === 'exercise' && exerciseName && !isCardio && (
                     <div style={{ marginBottom: '1.25rem' }}>
                         <label style={labelStyle}>{t('target_metric', { defaultValue: 'Target Metric' })}</label>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div style={{
+                            display: 'flex',
+                            background: 'rgba(255,255,255,0.05)',
+                            borderRadius: '10px',
+                            padding: '4px'
+                        }}>
                             {[['weight', t('weight', { defaultValue: 'Weight' })], ['reps', t('reps', { defaultValue: 'Reps' })]].map(([val, label]) => (
                                 <button
                                     key={val}
                                     onClick={() => { setTargetMetric(val); setTargetDisplay(''); }}
-                                    className={`btn ${targetMetric === val ? 'btn-primary' : ''}`}
-                                    style={{ flex: 1, justifyContent: 'center', padding: '0.6rem' }}
+                                    style={{
+                                        flex: 1,
+                                        padding: '0.5rem',
+                                        background: targetMetric === val ? 'var(--color-primary)' : 'transparent',
+                                        color: targetMetric === val ? '#fff' : 'var(--text-muted)',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                    }}
                                 >
                                     {label}
                                 </button>
