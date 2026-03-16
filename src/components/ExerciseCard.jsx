@@ -42,14 +42,17 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
     const activePRSetId = React.useMemo(() => {
         // Start with historical best
         let maxVol = personalRecords[exercise.name]?.volume || 0;
+        let maxWeight = personalRecords[exercise.name]?.weight || 0;
         let bestSetId = null;
 
         exercise.sets.forEach(s => {
             if (s.completed && s.weight > 0 && s.reps > 0) {
                 const mult = s.unilateral ? 2 : 1;
                 const vol = s.weight * s.reps * mult;
-                if (vol > maxVol) {
+                const isNewPR = vol > maxVol || (vol === maxVol && s.weight > maxWeight);
+                if (isNewPR) {
                     maxVol = vol;
+                    maxWeight = s.weight;
                     bestSetId = s.id;
                 }
             }

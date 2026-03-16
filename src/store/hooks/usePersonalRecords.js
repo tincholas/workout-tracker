@@ -42,11 +42,15 @@ export const usePersonalRecords = (history) => {
                         if (s.completed && s.weight > 0 && s.reps > 0) {
                             const mult = s.unilateral ? 2 : 1;
                             const vol = s.weight * s.reps * mult;
-                            const existing = records[ex.name] || { volume: 0, setId: null };
+                            const existing = records[ex.name] || { volume: 0, weight: 0, setId: null };
 
-                            if (vol > existing.volume) {
+                            const isNewPR = vol > existing.volume ||
+                                (vol === existing.volume && s.weight > (existing.weight || 0));
+
+                            if (isNewPR) {
                                 records[ex.name] = {
                                     volume: vol,
+                                    weight: s.weight,
                                     setId: s.id,
                                     date: workout.endTime,
                                     isCardio: false

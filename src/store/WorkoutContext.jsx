@@ -466,10 +466,14 @@ export const WorkoutProvider = ({ children }) => {
             // Check set-level PRs (single best set volume)
             if (ex.target !== 'Cardio' && ex.sets) {
                 const historicalBest = personalRecords[ex.name]?.volume || 0;
+                const historicalBestWeight = personalRecords[ex.name]?.weight || 0;
                 for (const s of ex.sets) {
                     if (s.completed && s.weight > 0 && s.reps > 0) {
                         const mult = s.unilateral ? 2 : 1;
-                        if (s.weight * s.reps * mult > historicalBest) {
+                        const vol = s.weight * s.reps * mult;
+                        const isNewPR = vol > historicalBest ||
+                            (vol === historicalBest && s.weight > historicalBestWeight);
+                        if (isNewPR) {
                             hadPR = true;
                             break;
                         }
