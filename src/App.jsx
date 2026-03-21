@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import WorkoutSession from './pages/WorkoutSession';
@@ -22,6 +22,20 @@ function App() {
   const location = useLocation();
   const { activeWorkout } = useWorkout();
   const [newReleases, setNewReleases] = useState(null);
+  const reloadingRef = useRef(false);
+
+  // When the service worker updates and takes control, reload so the new
+  // bundle is served and the version-check useEffect can fire correctly.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handleControllerChange = () => {
+      if (reloadingRef.current) return;
+      reloadingRef.current = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+  }, []);
 
   useEffect(() => {
     try {
@@ -58,7 +72,8 @@ function App() {
           }
         }).catch(err => {
           console.error("Failed to load changelog:", err);
-          localStorage.setItem('lastSeenVersion', current);
+          // Don't advance lastSeenVersion here — the user never saw the changelog.
+          // The next app open will try again.
         });
       }
     } catch (e) {
