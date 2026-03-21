@@ -115,7 +115,7 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                             style={{ transform: 'rotate(-90deg)', position: 'absolute', inset: 0 }}
                         >
                             <circle
-                                stroke="rgba(255,255,255,0.08)"
+                                stroke="rgba(255,255,255,0.15)"
                                 fill="transparent"
                                 strokeWidth={expandedStroke}
                                 r={expandedRadius}
@@ -155,20 +155,20 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 16 }}
                         transition={{ delay: 0.1, duration: 0.2 }}
-                        className="btn"
                         onClick={(e) => { e.stopPropagation(); extendRestTimer(60); }}
                         style={{
                             padding: '0.75rem 2rem',
                             borderRadius: '999px',
-                            border: '1px solid rgba(255,255,255,0.18)',
-                            background: 'rgba(255,255,255,0.07)',
-                            color: 'var(--text-primary)',
+                            border: '1px solid rgba(255,255,255,0.35)',
+                            background: 'rgba(255,255,255,0.15)',
+                            color: '#ffffff',
                             fontSize: '1rem',
                             fontWeight: 'bold',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.4rem',
                             cursor: 'pointer',
+                            boxShadow: 'none',
                         }}
                     >
                         <Plus size={18} /> 1 min
@@ -199,7 +199,7 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
             >
                 <div style={{ position: 'relative', width: compactSize, height: compactSize, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width={compactSize} height={compactSize} style={{ transform: 'rotate(-90deg)' }}>
-                        <circle stroke="rgba(255,255,255,0.1)" fill="transparent" strokeWidth={compactStroke} r={compactRadius} cx={compactSize / 2} cy={compactSize / 2} />
+                        <circle stroke="var(--shadow-dark)" fill="transparent" strokeWidth={compactStroke} r={compactRadius} cx={compactSize / 2} cy={compactSize / 2} />
                         <circle
                             stroke="var(--color-primary)"
                             fill="transparent"
