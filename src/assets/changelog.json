@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.0.36",
+    "changes": [
+      "Changelog bug fix",
+      "Added total time to timer, and remove the \"replace exercise\"",
+      "Added Bodyweight type exercises"
+    ]
+  },
+  {
     "version": "0.0.27",
     "changes": [
       "fixed scroll when returning to active workout"
