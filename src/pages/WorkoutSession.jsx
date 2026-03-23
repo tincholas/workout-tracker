@@ -13,15 +13,14 @@ export default function WorkoutSession() {
     const navigate = useNavigate();
     const { t } = useTranslation();
 
-    // Scroll to last completed set on mount
+    // Scroll to the first non-completed set on mount
     useEffect(() => {
         if (!activeWorkout) return;
         // Small delay to let ExerciseCard components render their sets into the DOM
         const timer = setTimeout(() => {
-            const completedSets = document.querySelectorAll('[data-set-completed="true"]');
-            if (completedSets.length > 0) {
-                const lastCompleted = completedSets[completedSets.length - 1];
-                lastCompleted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const firstIncomplete = document.querySelector('[data-set-completed="false"]');
+            if (firstIncomplete) {
+                firstIncomplete.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }, 300);
         return () => clearTimeout(timer);
