@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE, DEFAULT_WORKOUT_TYPES } from './models';
+import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE, DEFAULT_WORKOUT_TYPES, createSet } from './models';
 import { initDB, getData, setData } from './db';
 import { usePersonalRecords } from './hooks/usePersonalRecords';
 import { useRestTimer } from './hooks/useRestTimer';
@@ -629,10 +629,53 @@ export const WorkoutProvider = ({ children }) => {
     };
 
     const removeExercise = (exerciseId) => {
+        setActiveWorkout(current => {
+            if (!current) return current;
+            const updatedExercises = current.exercises.filter(ex => ex.id !== exerciseId);
+            return { ...current, exercises: updatedExercises };
+        });
+    };
+
+    const makeSuperset = (exerciseId) => {
         if (!activeWorkout) return;
 
-        const updatedExercises = activeWorkout.exercises.filter(ex => ex.id !== exerciseId);
-        setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
+        const exercises = [...activeWorkout.exercises];
+        const index = exercises.findIndex(ex => ex.id === exerciseId);
+        if (index <= 0) return; // Cannot superset the first element
+
+        const currentEx = { ...exercises[index] };
+        const prevEx = { ...exercises[index - 1] };
+
+        currentEx.supersetWithAbove = true;
+
+        // Equalize sets lengths to Math.max of both
+        const maxSets = Math.max(currentEx.sets.length, prevEx.sets.length);
+
+        currentEx.sets = [...currentEx.sets];
+        while (currentEx.sets.length < maxSets) {
+            currentEx.sets.push(createSet());
+        }
+
+        prevEx.sets = [...prevEx.sets];
+        while (prevEx.sets.length < maxSets) {
+            prevEx.sets.push(createSet());
+        }
+
+        exercises[index - 1] = prevEx;
+        exercises[index] = currentEx;
+
+        setActiveWorkout({ ...activeWorkout, exercises });
+    };
+
+    const breakSuperset = (exerciseId) => {
+        if (!activeWorkout) return;
+        const exercises = activeWorkout.exercises.map(ex => {
+            if (ex.id === exerciseId) {
+                return { ...ex, supersetWithAbove: false };
+            }
+            return ex;
+        });
+        setActiveWorkout({ ...activeWorkout, exercises });
     };
 
     const reorderExercise = (exerciseId, direction) => {
@@ -695,41 +738,46 @@ export const WorkoutProvider = ({ children }) => {
     };
 
     const addSet = (exerciseId) => {
-        if (!activeWorkout) return;
+        setActiveWorkout(current => {
+            if (!current) return current;
+            const updatedExercises = current.exercises.map(ex => {
+                if (ex.id !== exerciseId) return ex;
 
-        const updatedExercises = activeWorkout.exercises.map(ex => {
-            if (ex.id !== exerciseId) return ex;
+                // Clone the last set's weight/reps if available, otherwise default
+                const lastSet = ex.sets[ex.sets.length - 1];
+                const newSet = {
+                    id: uuidv4(),
+                    weight: lastSet ? lastSet.weight : 0,
+                    reps: lastSet ? lastSet.reps : 12,
+                    completed: false,
+                    leftDone: false,
+                    rightDone: false,
+                    unilateral: ex.unilateral ?? false,  // inherit exercise's current flag
+                };
 
-            // Clone the last set's weight/reps if available, otherwise default
-            const lastSet = ex.sets[ex.sets.length - 1];
-            const newSet = {
-                id: uuidv4(),
-                weight: lastSet ? lastSet.weight : 0,
-                reps: lastSet ? lastSet.reps : 12,
-                completed: false,
-                leftDone: false,
-                rightDone: false,
-                unilateral: ex.unilateral ?? false,  // inherit exercise's current flag
-            };
-
-            return { ...ex, sets: [...ex.sets, newSet] };
+                return { ...ex, sets: [...ex.sets, newSet] };
+            });
+            return { ...current, exercises: updatedExercises };
         });
-
-        setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
     };
 
-    const removeSet = (exerciseId) => {
-        if (!activeWorkout) return;
+    const removeSet = (exerciseId, setId = null) => {
+        setActiveWorkout(current => {
+            if (!current) return current;
+            const updatedExercises = current.exercises.map(ex => {
+                if (ex.id !== exerciseId) return ex;
+                if (ex.sets.length <= 1) return ex; // Don't remove the last set
 
-        const updatedExercises = activeWorkout.exercises.map(ex => {
-            if (ex.id !== exerciseId) return ex;
-            if (ex.sets.length <= 1) return ex; // Don't remove the last set
+                // If a specific setId is provided (from the superset remove target), filter it out
+                const newSets = setId ? ex.sets.filter(s => s.id !== setId) : ex.sets.slice(0, -1);
+                
+                // Safety net: if removing by ID somehow clears all sets, fallback to leaving the first one
+                if (newSets.length === 0) return ex;
 
-            const newSets = ex.sets.slice(0, -1);
-            return { ...ex, sets: newSets };
+                return { ...ex, sets: newSets };
+            });
+            return { ...current, exercises: updatedExercises };
         });
-
-        setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
     };
 
     const updateSet = (exerciseId, setId, updates) => {
@@ -793,6 +841,8 @@ export const WorkoutProvider = ({ children }) => {
             cancelWorkout,
             addExercise,
             removeExercise,
+            makeSuperset,
+            breakSuperset,
             reorderExercise,
             renameExercise,
             toggleUnit,

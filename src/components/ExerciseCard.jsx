@@ -10,7 +10,7 @@ import { calculateEffectiveWeight } from '../utils/volumeCalc';
 import { useNavigate } from 'react-router-dom';
 
 export default function ExerciseCard({ exercise, ...props }) {
-    const { addSet, removeSet, removeExercise, updateSet, updateExercise, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise, activeWorkout } = useWorkout();
+    const { addSet, removeSet, removeExercise, updateSet, updateExercise, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise, activeWorkout, makeSuperset } = useWorkout();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const { t } = useTranslation();
@@ -98,6 +98,16 @@ export default function ExerciseCard({ exercise, ...props }) {
         }, 0);
         return potentialVolume > best;
     }, [liveSets, exercise.name, exercise.target, exercise.unilateral, exercisePRs, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
+
+    const currentIndex = activeWorkout?.exercises.findIndex(ex => ex.id === exercise.id);
+    const prevExercise = currentIndex > 0 ? activeWorkout?.exercises[currentIndex - 1] : null;
+
+    const canMakeSuperset = 
+        prevExercise && 
+        prevExercise.target !== 'Cardio' && 
+        exercise.target !== 'Cardio' && 
+        !prevExercise.supersetWithAbove && 
+        !exercise.supersetWithAbove;
 
     return (
         <motion.div
@@ -214,6 +224,14 @@ export default function ExerciseCard({ exercise, ...props }) {
                                 >
                                     🔁 {exercise.unilateral ? t('make_bilateral', { defaultValue: 'Make Bilateral' }) : t('make_unilateral', { defaultValue: 'Make Unilateral' })}
                                 </button>
+                                {canMakeSuperset && (
+                                    <button
+                                        onClick={() => { makeSuperset(exercise.id); setShowMenu(false); }}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                                    >
+                                        🔗 {t('make_superset', { defaultValue: 'Make Superset' })}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => { removeExercise(exercise.id); setShowMenu(false); }}
                                     style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#ef4444', textAlign: 'left', cursor: 'pointer' }}

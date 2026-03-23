@@ -3,7 +3,7 @@ import { useWorkout } from '../store/WorkoutContext';
 import { Check, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilateral, exerciseIsUnilateral, isBodyweight }) {
+export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilateral, exerciseIsUnilateral, isBodyweight, hideIndex = false }) {
     const { preferredUnit } = useWorkout();
     // For completed sets use the stored set flag; for uncompleted sets follow the exercise
     const showUnilateral = set.completed ? !!(set.unilateral) : !!isUnilateral;
@@ -88,7 +88,8 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
 
     const oneSideDone = (set.leftDone || set.rightDone) && !set.completed;
     const wideCol = showUnilateral || exerciseIsUnilateral;
-    const gridCols = wideCol ? '2rem 1fr 1fr 76px' : '2rem 1fr 1fr 36px';
+    const gridCols = wideCol ? '1fr 1fr 76px' : '1fr 1fr 36px';
+    const finalGridCols = hideIndex ? gridCols : `2rem ${gridCols}`;
 
     const rowBg = set.completed
         ? (isPR ? 'rgba(234, 179, 8, 0.15)' : 'rgba(16, 185, 129, 0.1)')
@@ -97,12 +98,12 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
     return (
         <div style={{
             display: 'grid',
-            gridTemplateColumns: gridCols,
+            gridTemplateColumns: finalGridCols,
             gap: '0.5rem',
             alignItems: 'center',
-            marginBottom: '0.5rem',
-            backgroundColor: rowBg,
-            padding: '0.5rem',
+            marginBottom: hideIndex ? '0' : '0.5rem',
+            backgroundColor: hideIndex ? 'transparent' : rowBg,
+            padding: hideIndex ? '0' : '0.5rem',
             borderRadius: 'var(--radius-sm)',
             border: isPR && set.completed ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid transparent',
             position: 'relative',
@@ -118,10 +119,12 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
                 </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold' }}>{index + 1}</span>
-                {isPR && set.completed && <Trophy size={12} color="#eab308" className="pr-celebration" style={{ marginTop: 2 }} />}
-            </div>
+            {!hideIndex && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold' }}>{index + 1}</span>
+                    {isPR && set.completed && <Trophy size={12} color="#eab308" className="pr-celebration" style={{ marginTop: 2 }} />}
+                </div>
+            )}
 
             <div style={{ position: 'relative', zIndex: 1 }}>
                 <motion.input

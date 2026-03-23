@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import WeightMoodTracker from '../components/WeightMoodTracker';
+import ChangelogModal from '../components/ChangelogModal';
 
 // Icon Registry - Mapping names to Components
 const ICON_MAP = {
@@ -74,7 +75,44 @@ export default function Home() {
     const [selectedIcon, setSelectedIcon] = useState('Star');
     const [isStarting, setIsStarting] = useState(false);
     const [openMenuId, setOpenMenuId] = useState(null);
+    const [newReleases, setNewReleases] = useState(null);
     const { t } = useTranslation();
+
+    useEffect(() => {
+        try {
+            const lastSeen = localStorage.getItem('lastSeenVersion');
+            const current = __APP_VERSION__;
+
+            if (!lastSeen) {
+                // First time load ever, don't show changelog
+                localStorage.setItem('lastSeenVersion', current);
+            } else if (lastSeen !== current) {
+                // Version changed, let's see if it's newer
+                import('../assets/changelog.json').then(module => {
+                    const changelog = module.default || module;
+                    const unread = changelog.filter(release => {
+                        const vUnread = release.version.split('.').map(Number);
+                        const vSeen = lastSeen.split('.').map(Number);
+                        for (let i = 0; i < 3; i++) {
+                            if (vUnread[i] > (vSeen[i] || 0)) return true;
+                            if (vUnread[i] < (vSeen[i] || 0)) return false;
+                        }
+                        return false;
+                    });
+
+                    if (unread.length > 0) {
+                        setNewReleases(unread);
+                    } else {
+                        localStorage.setItem('lastSeenVersion', current);
+                    }
+                }).catch(err => {
+                    console.error("Failed to load changelog:", err);
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }, []);
 
     // Lock body scroll when any modal is open
     useEffect(() => {
@@ -166,6 +204,15 @@ export default function Home() {
             minHeight: '100vh',
             boxSizing: 'border-box'
         }}>
+            {newReleases && (
+                <ChangelogModal
+                    newVersions={newReleases}
+                    onClose={() => {
+                        localStorage.setItem('lastSeenVersion', __APP_VERSION__);
+                        setNewReleases(null);
+                    }}
+                />
+            )}
             <header style={{ marginBottom: '2rem', textAlign: 'center', color: 'var(--text-primary)' }}>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1px', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                     {t('app_title')}
