@@ -51,12 +51,19 @@ export const createSet = (weight = 0, reps = 12) => ({
     unilateral: false,
 });
 
-export const createExercise = (name, target = '') => ({
-    id: uuidv4(),
-    name,
-    target,
-    sets: [createSet(), createSet(), createSet(), createSet()], // Default 4 sets
-});
+export const createExercise = (name, target = '', bodyweight = false) => {
+    // Auto-resolve bodyweight flag if available in database
+    const dbMatch = EXERCISE_DATABASE.find(ex => ex.name === name);
+    const isBodyweight = bodyweight || (dbMatch ? !!dbMatch.bodyweight : false);
+
+    return {
+        id: uuidv4(),
+        name,
+        target,
+        bodyweight: isBodyweight,
+        sets: [createSet(), createSet(), createSet(), createSet()], // Default 4 sets
+    };
+};
 
 export const createWorkout = (name, type) => ({
     id: uuidv4(),
@@ -75,11 +82,11 @@ export const EXERCISE_DATABASE = [
     { name: 'Incline Dumbbell Press', target: 'Chest' },
     { name: 'Incline Barbell Press', target: 'Chest' },
     { name: 'Chest Fly (Machine/Dumbbell)', target: 'Chest' },
-    { name: 'Dips (Chest Focus)', target: 'Chest' },
-    { name: 'Push-ups', target: 'Chest' },
+    { name: 'Dips (Chest Focus)', target: 'Chest', bodyweight: true },
+    { name: 'Push-ups', target: 'Chest', bodyweight: true },
 
     // Back
-    { name: 'Pull-ups', target: 'Back' },
+    { name: 'Pull-ups', target: 'Back', bodyweight: true },
     { name: 'Barbell Row', target: 'Back' },
     { name: 'Lat Pulldown', target: 'Back' },
     { name: 'Seated Cable Row', target: 'Back' },
@@ -111,7 +118,7 @@ export const EXERCISE_DATABASE = [
     { name: 'Skull Crushers', target: 'Triceps' },
     { name: 'Overhead Tricep Extension', target: 'Triceps' },
     { name: 'Close-Grip Bench Press', target: 'Triceps' },
-    { name: 'Bench Dips', target: 'Triceps' },
+    { name: 'Bench Dips', target: 'Triceps', bodyweight: true },
 
     // Cardio
     { name: 'Running', target: 'Cardio' },

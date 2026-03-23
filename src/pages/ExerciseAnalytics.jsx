@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../store/WorkoutContext';
-import { MUSCLE_GROUPS } from '../store/models';
+import { MUSCLE_GROUPS, EXERCISE_DATABASE } from '../store/models';
 import '../utils/chartSetup';
 import { Line } from 'react-chartjs-2';
 import { ArrowLeft } from 'lucide-react';
@@ -36,12 +36,27 @@ export default function ExerciseAnalytics() {
         return '';
     }, [history, exerciseName, targetGroup]);
 
+    const currentBodyweight = React.useMemo(() => {
+        if (!history || !exerciseName) return false;
+        // Check DB first for defaults
+        const dbEx = EXERCISE_DATABASE.find(e => e.name === exerciseName);
+        if (dbEx && dbEx.bodyweight !== undefined) return dbEx.bodyweight;
+        // Then check history
+        for (const w of history) {
+            const ex = w.exercises.find(e => e.name === exerciseName);
+            if (ex && ex.bodyweight !== undefined) return ex.bodyweight;
+        }
+        return false;
+    }, [history, exerciseName]);
+
     const [editTarget, setEditTarget] = React.useState(currentTarget);
+    const [editBodyweight, setEditBodyweight] = React.useState(currentBodyweight);
 
     // Update editTarget when currentTarget is found (initial load)
     React.useEffect(() => {
         setEditTarget(currentTarget);
-    }, [currentTarget]);
+        setEditBodyweight(currentBodyweight);
+    }, [currentTarget, currentBodyweight]);
 
     // --- Step 1: Collect ALL raw dates + values (no windowing yet) ---
     const allRawData = useMemo(() => {
@@ -301,10 +316,11 @@ export default function ExerciseAnalytics() {
         e.preventDefault();
         const changedName = editName && editName !== exerciseName;
         const changedTarget = editTarget && editTarget !== currentTarget;
+        const changedBodyweight = editBodyweight !== currentBodyweight;
 
-        if (changedName || changedTarget) {
+        if (changedName || changedTarget || changedBodyweight) {
             if (confirm(t('confirm_update', { name: exerciseName, newName: editName, newTarget: editTarget || 'Unchanged' }))) {
-                renameExercise(exerciseName, editName, editTarget);
+                renameExercise(exerciseName, editName, editTarget, editBodyweight);
                 // Update URL without reload to reflect new name if changed
                 if (changedName) {
                     navigate(`/analytics?exercise=${encodeURIComponent(editName)}`, { replace: true });
@@ -350,6 +366,19 @@ export default function ExerciseAnalytics() {
                                     <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
                                 ))}
                             </select>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                <input
+                                    type="checkbox"
+                                    id="bodyweightToggle"
+                                    checked={editBodyweight}
+                                    onChange={e => setEditBodyweight(e.target.checked)}
+                                    style={{ accentColor: 'var(--primary)', width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                                />
+                                <label htmlFor="bodyweightToggle" style={{ fontSize: '0.8rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                                    {t('bodyweight_exercise', { defaultValue: 'Bodyweight Exercise' })}
+                                </label>
+                            </div>
 
                             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                                 <button type="submit" className="btn btn-primary">{t('save')}</button>

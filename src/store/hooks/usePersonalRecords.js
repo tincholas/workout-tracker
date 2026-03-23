@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { calculateEffectiveWeight } from '../../utils/volumeCalc';
 
 /**
  * Calculate Personal Records from workout history
@@ -39,9 +40,10 @@ export const usePersonalRecords = (history) => {
                 // Strength PR Logic (Max Volume per Set)
                 else if (ex.sets) {
                     ex.sets.forEach(s => {
-                        if (s.completed && s.weight > 0 && s.reps > 0) {
+                        if (s.completed && s.weight >= 0 && s.reps > 0) {
                             const mult = s.unilateral ? 2 : 1;
-                            const vol = s.weight * s.reps * mult;
+                            const effectiveWeight = calculateEffectiveWeight(s.weight, ex.bodyweight, workout.bodyWeightSnapshot);
+                            const vol = effectiveWeight * s.reps * mult;
                             const existing = records[ex.name] || { volume: 0, weight: 0, setId: null };
 
                             const isNewPR = vol > existing.volume ||
@@ -78,7 +80,8 @@ export const usePersonalRecords = (history) => {
 
                 const totalVol = ex.sets?.reduce((sum, s) => {
                     const mult = s.unilateral ? 2 : 1;
-                    return sum + (s.completed ? s.weight * s.reps * mult : 0);
+                    const effectiveWeight = calculateEffectiveWeight(s.weight, ex.bodyweight, workout.bodyWeightSnapshot);
+                    return sum + (s.completed ? effectiveWeight * s.reps * mult : 0);
                 }, 0) || 0;
 
                 if (totalVol === 0) return;

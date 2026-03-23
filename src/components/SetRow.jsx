@@ -3,7 +3,7 @@ import { useWorkout } from '../store/WorkoutContext';
 import { Check, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilateral, exerciseIsUnilateral }) {
+export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilateral, exerciseIsUnilateral, isBodyweight }) {
     const { preferredUnit } = useWorkout();
     // For completed sets use the stored set flag; for uncompleted sets follow the exercise
     const showUnilateral = set.completed ? !!(set.unilateral) : !!isUnilateral;
@@ -136,13 +136,15 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
                         backgroundColor: 'rgba(255,255,255,0.05)',
                         color: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'var(--text-primary)'
                     }}
-                    placeholder={preferredUnit}
+                    placeholder={isBodyweight ? `+ ${preferredUnit}` : preferredUnit}
                     value={getDisplayWeight()}
                     onChange={handleWeightChange}
                     onFocus={handleWeightFocus}
                     onBlur={handleWeightBlur}
                 />
-                <span style={{ position: 'absolute', right: 8, top: 10, fontSize: '0.7em', color: 'var(--text-muted)' }}>{preferredUnit}</span>
+                <span style={{ position: 'absolute', right: 8, top: 10, fontSize: '0.7em', color: 'var(--text-muted)' }}>
+                    {isBodyweight ? `+ ${preferredUnit}` : preferredUnit}
+                </span>
             </div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>

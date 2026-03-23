@@ -4,6 +4,7 @@ import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERC
 import { initDB, getData, setData } from './db';
 import { usePersonalRecords } from './hooks/usePersonalRecords';
 import { useRestTimer } from './hooks/useRestTimer';
+import { calculateEffectiveWeight } from '../utils/volumeCalc';
 
 const WorkoutContext = createContext();
 
@@ -197,6 +198,29 @@ export const WorkoutProvider = ({ children }) => {
                         return id ? { ...w, splitId: id } : w;
                     });
                     console.log('Backfilled splitId on legacy history records');
+                }
+
+                // Migration 4: Backfill bodyWeightSnapshot for legacy workouts
+                const needsBwMigration = currentHistory.some(w => w.bodyWeightSnapshot === undefined);
+                if (needsBwMigration) {
+                    currentHistory = currentHistory.map(w => {
+                        if (w.bodyWeightSnapshot !== undefined) return w;
+                        
+                        const workoutDate = new Date(w.endTime);
+                        let closestWeight = 80;
+                        
+                        if (savedWeightMoodLog && savedWeightMoodLog.length > 0) {
+                            // Find most recent log prior to or on the workout date
+                            const sortedLogs = [...savedWeightMoodLog].sort((a,b) => new Date(a.date) - new Date(b.date));
+                            for (const log of sortedLogs) {
+                                if (new Date(log.date) <= workoutDate && log.weight > 0) {
+                                    closestWeight = log.weight;
+                                }
+                            }
+                        }
+                        return { ...w, bodyWeightSnapshot: closestWeight };
+                    });
+                    console.log('Backfilled bodyWeightSnapshot on legacy history records');
                 }
 
                 setHistory(currentHistory);
@@ -410,6 +434,14 @@ export const WorkoutProvider = ({ children }) => {
         const { id: splitId, name, template } = workoutDef;
         let workout = createWorkout(name, name);
         workout.splitId = splitId;
+        
+        let currentBw = 80;
+        if (weightMoodLog && weightMoodLog.length > 0) {
+            const sorted = [...weightMoodLog].sort((a,b) => new Date(b.date) - new Date(a.date));
+            const latestValid = sorted.find(l => l.weight > 0);
+            if (latestValid) currentBw = latestValid.weight;
+        }
+        workout.bodyWeightSnapshot = currentBw;
 
         // 1. Try to find the last completed session for this split (by stable ID)
         const lastSession = history
@@ -475,9 +507,10 @@ export const WorkoutProvider = ({ children }) => {
                 const historicalBest = personalRecords[ex.name]?.volume || 0;
                 const historicalBestWeight = personalRecords[ex.name]?.weight || 0;
                 for (const s of ex.sets) {
-                    if (s.completed && s.weight > 0 && s.reps > 0) {
+                    if (s.completed && s.weight >= 0 && s.reps > 0) {
                         const mult = s.unilateral ? 2 : 1;
-                        const vol = s.weight * s.reps * mult;
+                        const effectiveWeight = calculateEffectiveWeight(s.weight, ex.bodyweight, activeWorkout.bodyWeightSnapshot);
+                        const vol = effectiveWeight * s.reps * mult;
                         const isNewPR = vol > historicalBest ||
                             (vol === historicalBest && s.weight > historicalBestWeight);
                         if (isNewPR) {
@@ -492,7 +525,8 @@ export const WorkoutProvider = ({ children }) => {
             if (!hadPR && ex.target !== 'Cardio' && ex.sets) {
                 const totalVol = ex.sets.reduce((sum, s) => {
                     const mult = s.unilateral ? 2 : 1;
-                    return sum + (s.completed ? s.weight * s.reps * mult : 0);
+                    const effectiveWeight = calculateEffectiveWeight(s.weight, ex.bodyweight, activeWorkout.bodyWeightSnapshot);
+                    return sum + (s.completed ? effectiveWeight * s.reps * mult : 0);
                 }, 0);
                 const historicalTotalBest = exercisePRs[ex.name]?.totalVolume || 0;
                 if (totalVol > historicalTotalBest) {
@@ -644,7 +678,7 @@ export const WorkoutProvider = ({ children }) => {
     };
 
     // Global Rename function
-    const renameExercise = (oldName, newName, newTarget = null) => {
+    const renameExercise = (oldName, newName, newTarget = null, newBodyweight = null) => {
         // 1. Update History
         const updatedHistory = history.map(workout => ({
             ...workout,
@@ -653,7 +687,8 @@ export const WorkoutProvider = ({ children }) => {
                     return {
                         ...ex,
                         name: newName,
-                        target: newTarget || ex.target // Update target if provided, else keep old
+                        target: newTarget || ex.target, // Update target if provided, else keep old
+                        bodyweight: newBodyweight !== null ? newBodyweight : !!ex.bodyweight
                     };
                 }
                 return ex;
@@ -670,7 +705,8 @@ export const WorkoutProvider = ({ children }) => {
                         return {
                             ...ex,
                             name: newName,
-                            target: newTarget || ex.target
+                            target: newTarget || ex.target,
+                            bodyweight: newBodyweight !== null ? newBodyweight : !!ex.bodyweight
                         };
                     }
                     return ex;

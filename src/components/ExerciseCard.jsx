@@ -6,6 +6,7 @@ import { useWorkout } from '../store/WorkoutContext';
 import { RefreshCw, Plus, Minus, Trash2, MoreVertical, ArrowUp, ArrowDown, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { calculateEffectiveWeight } from '../utils/volumeCalc';
 
 export default function ExerciseCard({ exercise, onSwap, ...props }) {
     const { addSet, removeSet, removeExercise, updateSet, updateExercise, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise, activeWorkout } = useWorkout();
@@ -46,9 +47,10 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         let bestSetId = null;
 
         exercise.sets.forEach(s => {
-            if (s.completed && s.weight > 0 && s.reps > 0) {
+            if (s.completed && s.weight >= 0 && s.reps > 0) {
                 const mult = s.unilateral ? 2 : 1;
-                const vol = s.weight * s.reps * mult;
+                const effectiveWeight = calculateEffectiveWeight(s.weight, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot);
+                const vol = effectiveWeight * s.reps * mult;
                 const isNewPR = vol > maxVol || (vol === maxVol && s.weight > maxWeight);
                 if (isNewPR) {
                     maxVol = vol;
@@ -59,7 +61,7 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         });
 
         return bestSetId;
-    }, [exercise.sets, exercise.name, personalRecords]);
+    }, [exercise.sets, exercise.name, personalRecords, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
 
     // --- Exercise-Level PR Logic ---
     // Read sets directly from activeWorkout so we always have the freshest values.
@@ -72,10 +74,11 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         if (best === 0) return false;
         const completedVolume = liveSets.reduce((sum, s) => {
             const mult = s.unilateral ? 2 : 1;
-            return sum + (s.completed ? (Number(s.weight) || 0) * (Number(s.reps) || 0) * mult : 0);
+            const effectiveWeight = calculateEffectiveWeight(s.weight, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot);
+            return sum + (s.completed ? effectiveWeight * (Number(s.reps) || 0) * mult : 0);
         }, 0);
         return completedVolume > best;
-    }, [liveSets, exercise.name, exercise.target, exercisePRs]);
+    }, [liveSets, exercise.name, exercise.target, exercisePRs, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
 
     // POTENTIAL PR: all entered values would beat the record → yellow glow
     const isPotentialPR = React.useMemo(() => {
@@ -85,13 +88,14 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         const potentialVolume = liveSets.reduce((sum, s) => {
             const w = Number(s.weight) || 0;
             const r = Number(s.reps) || 0;
-            if (w <= 0 || r <= 0) return sum;
+            const effectiveWeight = calculateEffectiveWeight(w, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot);
+            if (effectiveWeight <= 0 || r <= 0) return sum;
             // Completed sets: use their stamped flag; uncompleted: use current exercise mode
             const mult = s.completed ? (s.unilateral ? 2 : 1) : (exercise.unilateral ? 2 : 1);
-            return sum + w * r * mult;
+            return sum + effectiveWeight * r * mult;
         }, 0);
         return potentialVolume > best;
-    }, [liveSets, exercise.name, exercise.target, exercise.unilateral, exercisePRs]);
+    }, [liveSets, exercise.name, exercise.target, exercise.unilateral, exercisePRs, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
 
     return (
         <motion.div
@@ -231,9 +235,9 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{t('set')}</span>
                         <span
                             onClick={toggleUnit}
-                            style={{ fontSize: '0.8rem', color: 'var(--primary)', textAlign: 'center', cursor: 'pointer', fontWeight: 'bold' }}
+                            style={{ fontSize: '0.8rem', color: exercise.bodyweight ? 'var(--text-muted)' : 'var(--primary)', textAlign: 'center', cursor: exercise.bodyweight ? 'default' : 'pointer', fontWeight: 'bold' }}
                         >
-                            {preferredUnit}
+                            {exercise.bodyweight ? "Extra Wt" : preferredUnit}
                         </span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>{t('reps')}</span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
@@ -261,6 +265,7 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                                         isPR={set.id === activePRSetId}
                                         isUnilateral={!!exercise.unilateral}
                                         exerciseIsUnilateral={!!exercise.unilateral}
+                                        isBodyweight={!!exercise.bodyweight}
                                     />
                                 </motion.div>
                             ))}
