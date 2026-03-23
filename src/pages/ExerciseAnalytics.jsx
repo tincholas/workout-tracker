@@ -332,12 +332,14 @@ export default function ExerciseAnalytics() {
 
     if (!exerciseName && !targetGroup) return <div style={{ padding: '1rem' }}>{t('no_data_selected')}</div>;
 
+    const backRoute = searchParams.get('back') || '/history';
+
     return (
         <div style={{ padding: 'var(--space-md)' }}>
             <button
                 className="btn"
                 style={{ marginBottom: '1rem', padding: '0.5rem' }}
-                onClick={() => navigate('/history')}
+                onClick={() => navigate(backRoute)}
             >
                 <ArrowLeft size={16} /> {t('back')}
             </button>

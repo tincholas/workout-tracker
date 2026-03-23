@@ -7,12 +7,14 @@ import { RefreshCw, Plus, Minus, Trash2, MoreVertical, ArrowUp, ArrowDown, Troph
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { calculateEffectiveWeight } from '../utils/volumeCalc';
+import { useNavigate } from 'react-router-dom';
 
-export default function ExerciseCard({ exercise, onSwap, ...props }) {
+export default function ExerciseCard({ exercise, ...props }) {
     const { addSet, removeSet, removeExercise, updateSet, updateExercise, preferredUnit, toggleUnit, restTimer, startRestTimer, activeRestTimer, cancelRestTimer, reorderExercise, activeWorkout } = useWorkout();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const { t } = useTranslation();
+    const navigate = useNavigate();
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -117,7 +119,10 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
+                    <h3 
+                        style={{ margin: 0, fontSize: '1.1rem', cursor: 'pointer' }}
+                        onClick={() => navigate(`/analytics?exercise=${encodeURIComponent(exercise.name)}&back=/session`)}
+                    >
                         {t(`exercises.${exercise.name}`, { defaultValue: exercise.name })}
                     </h3>
                     <AnimatePresence>
@@ -208,12 +213,6 @@ export default function ExerciseCard({ exercise, onSwap, ...props }) {
                                     style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
                                 >
                                     🔁 {exercise.unilateral ? t('make_bilateral', { defaultValue: 'Make Bilateral' }) : t('make_unilateral', { defaultValue: 'Make Unilateral' })}
-                                </button>
-                                <button
-                                    onClick={() => { onSwap(exercise.id); setShowMenu(false); }}
-                                    style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
-                                >
-                                    <RefreshCw size={16} /> {t('replace')}
                                 </button>
                                 <button
                                     onClick={() => { removeExercise(exercise.id); setShowMenu(false); }}

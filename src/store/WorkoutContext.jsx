@@ -635,28 +635,6 @@ export const WorkoutProvider = ({ children }) => {
         setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
     };
 
-    const swapExercise = (oldExerciseId, exerciseOrName) => {
-        if (!activeWorkout) return;
-
-        let name, target;
-        if (typeof exerciseOrName === 'string') {
-            name = exerciseOrName;
-            target = findTarget(name);
-        } else {
-            name = exerciseOrName.name;
-            target = exerciseOrName.target || findTarget(name);
-        }
-
-        const updatedExercises = activeWorkout.exercises.map(ex => {
-            if (ex.id === oldExerciseId) {
-                return createExercise(name, target);
-            }
-            return ex;
-        });
-
-        setActiveWorkout({ ...activeWorkout, exercises: updatedExercises });
-    };
-
     const reorderExercise = (exerciseId, direction) => {
         if (!activeWorkout) return;
         const exercises = [...activeWorkout.exercises];
@@ -815,7 +793,6 @@ export const WorkoutProvider = ({ children }) => {
             cancelWorkout,
             addExercise,
             removeExercise,
-            swapExercise,
             reorderExercise,
             renameExercise,
             toggleUnit,

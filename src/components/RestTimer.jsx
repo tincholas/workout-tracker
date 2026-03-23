@@ -137,16 +137,27 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                         </svg>
 
                         {/* Time text centred inside the ring */}
-                        <span style={{
-                            fontFamily: 'monospace',
-                            fontWeight: 'bold',
-                            color: 'var(--color-primary)',
-                            fontSize: `${expandedSize * 0.18}px`,
-                            letterSpacing: '-0.02em',
-                            userSelect: 'none',
-                        }}>
-                            {formatTime(timeLeft)}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none', userSelect: 'none' }}>
+                            <span style={{
+                                fontFamily: 'monospace',
+                                fontWeight: 'bold',
+                                color: 'var(--color-primary)',
+                                fontSize: `${expandedSize * 0.18}px`,
+                                lineHeight: 1,
+                                letterSpacing: '-0.02em',
+                            }}>
+                                {formatTime(timeLeft)}
+                            </span>
+                            <span style={{
+                                fontFamily: 'monospace',
+                                color: 'rgba(255,255,255,0.4)',
+                                fontSize: `${expandedSize * 0.06}px`,
+                                marginTop: '0.4rem',
+                                letterSpacing: '0.05em',
+                            }}>
+                                / {formatTime(Math.floor(totalDuration / 1000))}
+                            </span>
+                        </div>
                     </motion.div>
 
                     {/* +1m button below the ring */}

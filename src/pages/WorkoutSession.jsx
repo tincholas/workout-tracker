@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 
 
 export default function WorkoutSession() {
-    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, swapExercise, cancelRestTimer, extraTypes } = useWorkout();
+    const { activeWorkout, completeWorkout, cancelWorkout, addExercise, cancelRestTimer, extraTypes } = useWorkout();
     const navigate = useNavigate();
     const { t } = useTranslation();
 
@@ -27,8 +27,7 @@ export default function WorkoutSession() {
     }, []); // Only on mount
 
     // Modal State
-    const [pickerMode, setPickerMode] = useState(null); // 'ADD' or 'SWAP'
-    const [swapTargetId, setSwapTargetId] = useState(null);
+    const [showPicker, setShowPicker] = useState(false);
 
     // Resolve Display Name: use i18nKey, then name-based lookup, then raw name
     const displayName = React.useMemo(() => {
@@ -65,19 +64,9 @@ export default function WorkoutSession() {
         }
     };
 
-    const openSwap = (id) => {
-        setSwapTargetId(id);
-        setPickerMode('SWAP');
-    };
-
     const handleSelectExercise = (name) => {
-        if (pickerMode === 'ADD') {
-            addExercise(name);
-        } else if (pickerMode === 'SWAP' && swapTargetId) {
-            swapExercise(swapTargetId, name);
-        }
-        setPickerMode(null);
-        setSwapTargetId(null);
+        addExercise(name);
+        setShowPicker(false);
     };
 
     return (
@@ -105,7 +94,6 @@ export default function WorkoutSession() {
                     <ExerciseCard
                         key={ex.id}
                         exercise={ex}
-                        onSwap={(id) => openSwap(id)}
                     />
                 ))}
             </div>
@@ -115,7 +103,7 @@ export default function WorkoutSession() {
                 whileTap={{ scale: 0.95 }}
                 className="btn"
                 style={{ width: '100%', borderStyle: 'dashed', marginTop: '1rem', padding: '1rem' }}
-                onClick={() => setPickerMode('ADD')}
+                onClick={() => setShowPicker(true)}
             >
                 <Plus size={20} /> {t('add_exercise')}
             </motion.button>
@@ -132,9 +120,9 @@ export default function WorkoutSession() {
 
             {/* Picker Modal */}
             <AnimatePresence>
-                {pickerMode && (
+                {showPicker && (
                     <ExercisePickerModal
-                        onClose={() => setPickerMode(null)}
+                        onClose={() => setShowPicker(false)}
                         onSelect={handleSelectExercise}
                     />
                 )}
