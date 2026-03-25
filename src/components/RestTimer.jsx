@@ -82,7 +82,7 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                     onTouchEnd={onTouchEnd}
                     style={{
                         position: 'fixed',
-                        inset: 0,
+                        inset: '-10vh',
                         zIndex: 200,
                         background: 'rgba(0,0,0,0.78)',
                         backdropFilter: 'blur(8px)',
