@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { trackEvent } from '../utils/analytics';
 import { createWorkout, EXERCISE_TYPES, WORKOUT_TEMPLATES, createExercise, EXERCISE_DATABASE, DEFAULT_WORKOUT_TYPES, createSet } from './models';
 import { initDB, getData, setData } from './db';
 import { usePersonalRecords } from './hooks/usePersonalRecords';
@@ -256,6 +257,7 @@ export const WorkoutProvider = ({ children }) => {
                 
             if (isComplete) {
                 changed = true;
+                trackEvent('goal_achieved', { type: g.type, target_metric: g.targetMetric, context: 'auto' });
                 return { ...g, status: 'completed', completedAt: today };
             }
             return g;
@@ -309,6 +311,10 @@ export const WorkoutProvider = ({ children }) => {
 
     const trackWeightMood = (weight, mood) => {
         const date = toDateStr(new Date());
+        trackEvent('weight_tracked', { weight: Number(weight) });
+        if (mood && mood !== 'good') {
+            trackEvent('mood_tracked', { mood });
+        }
         setWeightMoodLog(prev => {
             const filtered = prev.filter(e => e.date !== date);
             return [...filtered, { date, weight, mood }];
@@ -335,6 +341,7 @@ export const WorkoutProvider = ({ children }) => {
             status: 'active'
         };
         setGoals(prev => [...prev, goal]);
+        trackEvent('goal_set', { type: goalData.type, target_metric: goalData.targetMetric });
         return goal;
     };
 
@@ -411,6 +418,7 @@ export const WorkoutProvider = ({ children }) => {
 
             if (isComplete) {
                 const completed = { ...g, status: 'completed', completedAt: today };
+                trackEvent('goal_achieved', { type: g.type, target_metric: g.targetMetric });
                 newlyCompleted.push(completed);
                 return completed;
             }
@@ -422,6 +430,7 @@ export const WorkoutProvider = ({ children }) => {
     };
 
     const createCustomType = (name, color, icon) => {
+        trackEvent('workout_created', { split_name: name });
         const newType = {
             id: crypto.randomUUID(),
             name,
@@ -585,6 +594,7 @@ export const WorkoutProvider = ({ children }) => {
         const newHistory = [...history, completed];
         setHistory(newHistory);
         setActiveWorkout(null);
+        trackEvent('workout_tracked', { split_id: activeWorkout.splitId, duration_minutes: Math.round(activeWorkout.duration / 60) });
         // Check exercise goal completions with the finished workout
         checkGoalCompletions(completed, null);
     };
@@ -628,6 +638,10 @@ export const WorkoutProvider = ({ children }) => {
             .flatMap(w => w.exercises)
             .find(e => e.name === name);
         const unilateral = lastEntry?.unilateral ?? false;
+
+        if (target === 'Custom') {
+            trackEvent('exercise_created', { exercise_name: name });
+        }
 
         // Build the new exercise, pre-filling sets with last session's weight/reps
         const baseExercise = createExercise(name, target);

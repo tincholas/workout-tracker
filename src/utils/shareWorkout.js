@@ -1,3 +1,5 @@
+import { trackEvent } from './analytics';
+
 export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = {}, completedGoals = []) => {
     const date = new Date(workout.endTime).toLocaleDateString();
     let text = `🏋️ ${workout.name} (${date})\n\n`;
@@ -48,6 +50,7 @@ export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = 
                 title: `${workout.name} Workout`,
                 text: text,
             });
+            trackEvent('workout_shared', { method: 'native' });
         } catch (err) {
             console.log('Error sharing:', err);
         }
@@ -55,6 +58,7 @@ export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = 
         // Fallback
         try {
             await navigator.clipboard.writeText(text);
+            trackEvent('workout_shared', { method: 'clipboard' });
             alert('Workout summary copied to clipboard!');
         } catch (err) {
             console.error('Failed to copy', err);
