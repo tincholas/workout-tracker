@@ -1,11 +1,12 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { PartyPopper, ChevronRight } from 'lucide-react';
 
 export default function ChangelogModal({ newVersions, onClose }) {
     const { t } = useTranslation();
 
-    return (
+    return createPortal(
         <div style={{
             position: 'fixed', inset: 0, zIndex: 9999,
             background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
@@ -67,6 +68,7 @@ export default function ChangelogModal({ newVersions, onClose }) {
                     Dismiss
                 </button>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
