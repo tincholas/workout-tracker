@@ -332,9 +332,11 @@ export const WorkoutProvider = ({ children }) => {
                 if (goal.isCardio) {
                     if ((ex.accumulatedSeconds || 0) > best) best = ex.accumulatedSeconds;
                 } else if (goal.targetMetric === 'reps') {
+                    let totalReps = 0;
                     for (const s of (ex.sets || [])) {
-                        if (s.completed && s.reps > best) best = s.reps;
+                        if (s.completed) totalReps += (s.reps || 0);
                     }
+                    if (totalReps > best) best = totalReps;
                 } else {
                     for (const s of (ex.sets || [])) {
                         if (s.completed && s.weight > best) best = s.weight;
@@ -365,8 +367,8 @@ export const WorkoutProvider = ({ children }) => {
                     if (g.isCardio) {
                         currentValue = ex.accumulatedSeconds || 0;
                     } else if (g.targetMetric === 'reps') {
-                        const best = Math.max(...(ex.sets || []).filter(s => s.completed).map(s => s.reps || 0), 0);
-                        if (best > 0) currentValue = best;
+                        const totalReps = (ex.sets || []).filter(s => s.completed).reduce((acc, s) => acc + (s.reps || 0), 0);
+                        if (totalReps > 0) currentValue = totalReps;
                     } else {
                         const best = Math.max(...(ex.sets || []).filter(s => s.completed).map(s => s.weight || 0), 0);
                         if (best > 0) currentValue = best;
