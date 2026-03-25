@@ -75,7 +75,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
             setTempReps(null);
             return;
         }
-        handleChange('reps', tempReps);
+        handleChange('reps', parseInt(tempReps, 10) || 0);
         setTempReps(null);
     };
 

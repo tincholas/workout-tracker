@@ -240,6 +240,33 @@ export const WorkoutProvider = ({ children }) => {
         loadData();
     }, []);
 
+    // Auto-complete active goals that have reached their target
+    useEffect(() => {
+        if (!isInitialized || goals.length === 0) return;
+        
+        let changed = false;
+        const today = toDateStr(new Date());
+
+        const updatedGoals = goals.map(g => {
+            if (g.status !== 'active') return g;
+            const current = getGoalCurrentValue(g, history, weightMoodLog);
+            const isComplete = g.targetValue > g.initialValue 
+                ? current >= g.targetValue 
+                : current <= g.targetValue;
+                
+            if (isComplete) {
+                changed = true;
+                return { ...g, status: 'completed', completedAt: today };
+            }
+            return g;
+        });
+
+        if (changed) {
+            setGoals(updatedGoals);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isInitialized, history, weightMoodLog]);
+
     // Save to DB on change
     useEffect(() => {
         if (!isInitialized) return;
@@ -334,7 +361,7 @@ export const WorkoutProvider = ({ children }) => {
                 } else if (goal.targetMetric === 'reps') {
                     let totalReps = 0;
                     for (const s of (ex.sets || [])) {
-                        if (s.completed) totalReps += (s.reps || 0);
+                        if (s.completed) totalReps += (Number(s.reps) || 0);
                     }
                     if (totalReps > best) best = totalReps;
                 } else {
@@ -367,7 +394,7 @@ export const WorkoutProvider = ({ children }) => {
                     if (g.isCardio) {
                         currentValue = ex.accumulatedSeconds || 0;
                     } else if (g.targetMetric === 'reps') {
-                        const totalReps = (ex.sets || []).filter(s => s.completed).reduce((acc, s) => acc + (s.reps || 0), 0);
+                        const totalReps = (ex.sets || []).filter(s => s.completed).reduce((acc, s) => acc + (Number(s.reps) || 0), 0);
                         if (totalReps > 0) currentValue = totalReps;
                     } else {
                         const best = Math.max(...(ex.sets || []).filter(s => s.completed).map(s => s.weight || 0), 0);

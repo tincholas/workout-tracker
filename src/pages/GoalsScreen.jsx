@@ -68,8 +68,8 @@ function GoalCard({ goal, onDelete, preferredUnit, currentValue }) {
 
             {/* Stats row */}
             <div style={{ display: 'flex', gap: '1.2rem', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.65rem', flexWrap: 'wrap' }}>
-                <span>🏁 {formatValue(goal.initialValue, goal, preferredUnit, t)}</span>
                 <span>🎯 {formatValue(goal.targetValue, goal, preferredUnit, t)}</span>
+                <span>📍 {formatValue(currentValue, goal, preferredUnit, t)}</span>
                 {goal.type === 'bodyweight' && (() => {
                     const delta = currentValue - goal.initialValue;
                     const isLoss = delta < 0;
