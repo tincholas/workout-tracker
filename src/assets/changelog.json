@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.46",
+    "changes": [
+      "Added Google Analytics",
+      "fixed checks on Goals",
+      "Check rep goals against full workout",
+      "centered changelog",
+      "fixed top border of full screen timer"
+    ]
+  },
+  {
     "version": "0.0.36",
     "changes": [
       "Changelog bug fix",
