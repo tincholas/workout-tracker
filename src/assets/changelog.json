@@ -1,5 +1,11 @@
 [
   {
+    "version": "0.0.51",
+    "changes": [
+      "another fix..."
+    ]
+  },
+  {
     "version": "0.0.50",
     "changes": [
       "Fix for content scrolling behind dynamic island on ios"
