@@ -68,18 +68,13 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
 
     // The expanded overlay is portalled to document.body so it escapes
     // ExerciseCard's `overflow: hidden` + Framer Motion transform context.
+    // We use a plain <div> for the fixed backdrop because Framer Motion's
+    // motion.div applies internal transforms that break position:fixed on iOS.
     const overlay = (
         <AnimatePresence>
             {expanded && (
-                <motion.div
-                    key="rest-timer-overlay"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.22 }}
-                    onClick={() => setExpanded(false)}
-                    onTouchStart={onTouchStart}
-                    onTouchEnd={onTouchEnd}
+                <div
+                    key="rest-timer-backdrop"
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -87,16 +82,30 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                         right: 0,
                         bottom: 0,
                         zIndex: 200,
-                        background: 'rgba(0,0,0,0.78)',
-                        backdropFilter: 'blur(8px)',
-                        WebkitBackdropFilter: 'blur(8px)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '2.5rem',
                     }}
                 >
+                    <motion.div
+                        key="rest-timer-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.22 }}
+                        onClick={() => setExpanded(false)}
+                        onTouchStart={onTouchStart}
+                        onTouchEnd={onTouchEnd}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            background: 'rgba(0,0,0,0.78)',
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '2.5rem',
+                        }}
+                    >
                     {/* Large ring with MM:SS inside */}
                     <motion.div
                         initial={{ scale: 0.4, opacity: 0 }}
@@ -187,7 +196,8 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                     >
                         <Plus size={18} /> 1 min
                     </motion.button>
-                </motion.div>
+                    </motion.div>
+                </div>
             )}
         </AnimatePresence>
     );
