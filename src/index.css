@@ -133,6 +133,21 @@ body {
   flex-direction: column;
 }
 
+/* Frosted blur strip behind the Dynamic Island / notch area */
+#root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg-app) 40%, transparent);
+  z-index: 100;
+  pointer-events: none;
+}
+
 /* Utilities */
 .btn {
   background: var(--bg-card);
