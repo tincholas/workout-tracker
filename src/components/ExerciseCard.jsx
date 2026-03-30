@@ -69,9 +69,33 @@ export default function ExerciseCard({ exercise, ...props }) {
     // Read sets directly from activeWorkout so we always have the freshest values.
     const liveSets = activeWorkout?.exercises?.find(e => e.id === exercise.id)?.sets ?? exercise.sets;
 
+    // --- Cardio live elapsed (tick every second while running) ---
+    const isCardio = exercise.target === 'Cardio';
+    const isTimerRunning = isCardio && exercise.timerState === 'running';
+    const [now, setNow] = React.useState(Date.now());
+
+    React.useEffect(() => {
+        if (!isTimerRunning) return;
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, [isTimerRunning]);
+
+    const cardioElapsed = React.useMemo(() => {
+        if (!isCardio) return 0;
+        const accumulated = exercise.accumulatedSeconds || 0;
+        if (isTimerRunning && exercise.timerStart) {
+            return accumulated + (now - new Date(exercise.timerStart).getTime()) / 1000;
+        }
+        return accumulated;
+    }, [isCardio, exercise.accumulatedSeconds, isTimerRunning, exercise.timerStart, now]);
+
+    const cardioPRBest = isCardio ? (personalRecords[exercise.name]?.volume || 0) : 0;
+
     // ACTUAL PR: completed sets already beat the record → yellow border
     const isActualPR = React.useMemo(() => {
-        if (exercise.target === 'Cardio') return false;
+        if (isCardio) {
+            return cardioPRBest > 0 && cardioElapsed > cardioPRBest;
+        }
         const best = exercisePRs[exercise.name]?.totalVolume || 0;
         if (best === 0) return false;
         const completedVolume = liveSets.reduce((sum, s) => {
@@ -80,11 +104,14 @@ export default function ExerciseCard({ exercise, ...props }) {
             return sum + (s.completed ? effectiveWeight * (Number(s.reps) || 0) * mult : 0);
         }, 0);
         return completedVolume > best;
-    }, [liveSets, exercise.name, exercise.target, exercisePRs, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
+    }, [isCardio, cardioPRBest, cardioElapsed, liveSets, exercise.name, exercisePRs, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
 
     // POTENTIAL PR: all entered values would beat the record → yellow glow
     const isPotentialPR = React.useMemo(() => {
-        if (exercise.target === 'Cardio') return false;
+        if (isCardio) {
+            const targetSeconds = (Number(exercise.targetTimeMinutes) || 0) * 60;
+            return cardioPRBest > 0 && targetSeconds > cardioPRBest;
+        }
         const best = exercisePRs[exercise.name]?.totalVolume || 0;
         if (best === 0) return false;
         const potentialVolume = liveSets.reduce((sum, s) => {
@@ -97,7 +124,7 @@ export default function ExerciseCard({ exercise, ...props }) {
             return sum + effectiveWeight * r * mult;
         }, 0);
         return potentialVolume > best;
-    }, [liveSets, exercise.name, exercise.target, exercise.unilateral, exercisePRs, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
+    }, [isCardio, exercise.targetTimeMinutes, cardioPRBest, liveSets, exercise.name, exercise.unilateral, exercisePRs, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
 
     const currentIndex = activeWorkout?.exercises.findIndex(ex => ex.id === exercise.id);
     const prevExercise = currentIndex > 0 ? activeWorkout?.exercises[currentIndex - 1] : null;
