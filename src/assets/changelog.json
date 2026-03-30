@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.55",
+    "changes": [
+      "fixed timer on supersets",
+      "Mark potential/actual cardio PRs"
+    ]
+  },
+  {
     "version": "0.0.51",
     "changes": [
       "another fix..."
