@@ -7,7 +7,7 @@ import SupersetRow from './SupersetRow';
 import { useNavigate } from 'react-router-dom';
 
 export default function SupersetCard({ exercise1, exercise2 }) {
-    const { breakSuperset, addSet, removeSet, updateSet, removeExercise } = useWorkout();
+    const { breakSuperset, addSet, removeSet, updateSet, removeExercise, restTimer, startRestTimer } = useWorkout();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const { t } = useTranslation();
@@ -107,8 +107,18 @@ export default function SupersetCard({ exercise1, exercise2 }) {
                         set2={exercise2.sets[i]}
                         exercise1={exercise1}
                         exercise2={exercise2}
-                        onUpdate1={(updates) => updateSet(exercise1.id, exercise1.sets[i].id, updates)}
-                        onUpdate2={(updates) => updateSet(exercise2.id, exercise2.sets[i].id, updates)}
+                        onUpdate1={(updates) => {
+                            updateSet(exercise1.id, exercise1.sets[i].id, updates);
+                            if ((updates.completed === true || updates.leftDone === true || updates.rightDone === true) && restTimer.enabled && restTimer.seconds > 0) {
+                                startRestTimer(exercise1.id, restTimer.seconds);
+                            }
+                        }}
+                        onUpdate2={(updates) => {
+                            updateSet(exercise2.id, exercise2.sets[i].id, updates);
+                            if ((updates.completed === true || updates.leftDone === true || updates.rightDone === true) && restTimer.enabled && restTimer.seconds > 0) {
+                                startRestTimer(exercise2.id, restTimer.seconds);
+                            }
+                        }}
                         isPR1={false}
                         isPR2={false}
                     />

@@ -310,6 +310,8 @@ export default function ExerciseCard({ exercise, ...props }) {
                                         isUnilateral={!!exercise.unilateral}
                                         exerciseIsUnilateral={!!exercise.unilateral}
                                         isBodyweight={!!exercise.bodyweight}
+                                        prVolume={personalRecords[exercise.name]?.volume || 0}
+                                        bodyWeightSnapshot={activeWorkout?.bodyWeightSnapshot}
                                     />
                                 </motion.div>
                             ))}

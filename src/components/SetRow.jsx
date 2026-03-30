@@ -3,8 +3,9 @@ import { useWorkout } from '../store/WorkoutContext';
 import { Check, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilateral, exerciseIsUnilateral, isBodyweight, hideIndex = false }) {
+export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilateral, exerciseIsUnilateral, isBodyweight, hideIndex = false, prVolume = 0, bodyWeightSnapshot }) {
     const { preferredUnit } = useWorkout();
+    const KG_TO_LBS = 2.20462;
     // For completed sets use the stored set flag; for uncompleted sets follow the exercise
     const showUnilateral = set.completed ? !!(set.unilateral) : !!isUnilateral;
 
@@ -42,9 +43,11 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
     const handleWeightFocus = () => {
         prevWeightRef.current = set.weight;
         setTempValue('');
+        setWeightFocused(true);
     };
 
     const handleWeightBlur = () => {
+        setWeightFocused(false);
         if (tempValue === '' || tempValue === null) {
             handleChange('weight', prevWeightRef.current);
             setTempValue(null);
@@ -68,8 +71,9 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
     };
 
     const handleRepsChange = (e) => { setTempReps(e.target.value); };
-    const handleRepsFocus = () => { prevRepsRef.current = set.reps; setTempReps(''); };
+    const handleRepsFocus = () => { prevRepsRef.current = set.reps; setTempReps(''); setRepsFocused(true); };
     const handleRepsBlur = () => {
+        setRepsFocused(false);
         if (tempReps === '' || tempReps === null) {
             handleChange('reps', prevRepsRef.current);
             setTempReps(null);
@@ -90,6 +94,69 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
     const wideCol = showUnilateral || exerciseIsUnilateral;
     const gridCols = wideCol ? '1fr 1fr 76px' : '1fr 1fr 36px';
     const finalGridCols = hideIndex ? gridCols : `2rem ${gridCols}`;
+
+    // --- PR Hint Logic ---
+    const [weightFocused, setWeightFocused] = useState(false);
+    const [repsFocused, setRepsFocused] = useState(false);
+
+    const { prHintReps, prHintWeight } = React.useMemo(() => {
+        if (prVolume <= 0) return {};
+        const mult = (set.completed ? (set.unilateral ? 2 : 1) : (isUnilateral ? 2 : 1));
+
+        // Calculate effective weight for the current set
+        const currentWeightKg = Number(set.weight) || 0;
+        const effectiveWeight = isBodyweight
+            ? (() => {
+                const bw = (bodyWeightSnapshot && bodyWeightSnapshot > 0) ? bodyWeightSnapshot : 80;
+                const rounded = Math.round(bw / 20) * 20;
+                return (rounded / 2) + currentWeightKg;
+            })()
+            : currentWeightKg;
+
+        // Reps hint: minimum reps at current weight to beat PR
+        let hintReps = null;
+        if (effectiveWeight > 0) {
+            hintReps = Math.floor(prVolume / (effectiveWeight * mult)) + 1;
+        }
+
+        // Weight hint: minimum weight at current reps to beat PR
+        const currentReps = Number(set.reps) || 0;
+        let hintWeight = null;
+        if (currentReps > 0) {
+            const rawThreshold = prVolume / (currentReps * mult);
+            // Round up to nearest 0.5kg
+            let candidate = Math.ceil(rawThreshold * 2) / 2;
+            // Ensure strictly greater
+            if (candidate * currentReps * mult <= prVolume) candidate += 0.5;
+
+            if (isBodyweight) {
+                // Subtract effective bodyweight component to show extra weight needed
+                const bw = (bodyWeightSnapshot && bodyWeightSnapshot > 0) ? bodyWeightSnapshot : 80;
+                const rounded = Math.round(bw / 20) * 20;
+                let extraNeeded = candidate - (rounded / 2);
+                extraNeeded = Math.ceil(extraNeeded * 2) / 2;
+                hintWeight = Math.max(0, extraNeeded);
+            } else {
+                hintWeight = candidate;
+            }
+
+            // Convert for display if using LBS
+            if (preferredUnit !== 'KG') {
+                hintWeight = Math.ceil(hintWeight * KG_TO_LBS * 2) / 2;
+            }
+        }
+
+        return { prHintReps: hintReps, prHintWeight: hintWeight };
+    }, [prVolume, set.weight, set.reps, set.completed, set.unilateral, isUnilateral, isBodyweight, bodyWeightSnapshot, preferredUnit]);
+
+    const hintStyle = {
+        fontSize: '0.65rem',
+        color: '#eab308',
+        textAlign: 'center',
+        marginTop: '2px',
+        fontWeight: 600,
+        letterSpacing: '0.02em',
+    };
 
     const rowBg = set.completed
         ? (isPR ? 'rgba(234, 179, 8, 0.15)' : 'rgba(16, 185, 129, 0.1)')
@@ -148,6 +215,9 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
                 <span style={{ position: 'absolute', right: 8, top: 10, fontSize: '0.7em', color: 'var(--text-muted)' }}>
                     {isBodyweight ? `+ ${preferredUnit}` : preferredUnit}
                 </span>
+                {weightFocused && prHintWeight != null && (
+                    <div style={hintStyle}>🏆 {prHintWeight} for PR</div>
+                )}
             </div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>
@@ -170,6 +240,9 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
                     onBlur={handleRepsBlur}
                 />
                 <span style={{ position: 'absolute', right: 8, top: 10, fontSize: '0.7em', color: 'var(--text-muted)' }}>REPS</span>
+                {repsFocused && prHintReps != null && (
+                    <div style={hintStyle}>🏆 {prHintReps} for PR</div>
+                )}
             </div>
 
             {showUnilateral ? (
