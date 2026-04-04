@@ -5,9 +5,10 @@ import { getAllData, importData, clearData } from '../store/db';
 import {
     Flame, CheckCircle, Calendar, TrendingUp, BarChart2,
     Download, Upload, Trash2, RefreshCw, Globe, Sun, Moon,
-    Dumbbell, Monitor, Target
+    Dumbbell, Monitor, Target, Timer
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { fmtSeconds } from '../utils/formatTime';
 
 const THEME_KEY = 'app_theme';
 
@@ -28,14 +29,16 @@ function applyTheme(theme) {
 // Apply saved theme on module load
 applyTheme(getTheme());
 
-function StatCard({ icon, value, label, color = 'var(--color-primary)' }) {
+function StatCard({ icon, value, label, color = 'var(--color-primary)', onClick }) {
     return (
-        <div className="card" style={{
+        <div className="card" onClick={onClick} style={{
             padding: '1.25rem',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '0.4rem'
+            gap: '0.4rem',
+            cursor: onClick ? 'pointer' : 'default',
+            userSelect: onClick ? 'none' : 'auto',
         }}>
             <div style={{ color }}>{icon}</div>
             <span style={{ fontSize: '1.8rem', fontWeight: '800', lineHeight: 1 }}>{value}</span>
@@ -78,6 +81,11 @@ export default function Profile() {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
     const [theme, setThemeState] = React.useState(getTheme);
+    const [workoutPeriod, setWorkoutPeriod] = React.useState(0); // 0=month, 1=year, 2=week
+    const [consistencyPeriod, setConsistencyPeriod] = React.useState(0); // 0=7d, 1=30d, 2=90d
+    const [avgPeriod, setAvgPeriod] = React.useState(0); // 0=month, 1=year, 2=week
+    const [cardioPeriod, setCardioPeriod] = React.useState(0); // 0=month, 1=year, 2=week
+    const [avgCardioPeriod, setAvgCardioPeriod] = React.useState(0); // 0=month, 1=year, 2=week
 
     const changeTheme = (val) => {
         applyTheme(val);
@@ -100,14 +108,19 @@ export default function Profile() {
             check.setDate(check.getDate() - 1);
         }
 
-        // 7-day consistency
-        let active7 = 0;
-        for (let i = 0; i < 7; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            if (daysWithWorkouts.has(toDay(d))) active7++;
-        }
-        const consistency = Math.round((active7 / 7) * 100);
+        // Consistency (7 / 30 / 90 days)
+        const countActive = (days) => {
+            let count = 0;
+            for (let i = 0; i < days; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                if (daysWithWorkouts.has(toDay(d))) count++;
+            }
+            return Math.round((count / days) * 100);
+        };
+        const consistency7 = countActive(7);
+        const consistency30 = countActive(30);
+        const consistency90 = countActive(90);
 
         // PR streak (consecutive workouts with hadPR)
         let prStreak = 0;
@@ -125,7 +138,14 @@ export default function Profile() {
         }).length;
         const thisYearCount = history.filter(w => new Date(w.endTime).getFullYear() === thisYear).length;
 
-        // Average workouts per month (over all recorded months)
+        // Workouts this week (Mon–Sun)
+        const startOfWeek = new Date(now);
+        const dayOfWeek = startOfWeek.getDay();
+        startOfWeek.setDate(startOfWeek.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        startOfWeek.setHours(0, 0, 0, 0);
+        const thisWeekCount = history.filter(w => new Date(w.endTime) >= startOfWeek).length;
+
+        // Average workouts per month / year / week
         const monthSet = new Set(history.map(w => {
             const d = new Date(w.endTime);
             return `${d.getFullYear()}-${d.getMonth()}`;
@@ -134,7 +154,22 @@ export default function Profile() {
             ? Math.round((history.length / monthSet.size) * 10) / 10
             : 0;
 
-        return { streak, consistency, prStreak, thisMonthCount, thisYearCount, avgPerMonth };
+        const yearSet = new Set(history.map(w => new Date(w.endTime).getFullYear().toString()));
+        const avgPerYear = yearSet.size > 0
+            ? Math.round((history.length / yearSet.size) * 10) / 10
+            : 0;
+
+        const weekSet = new Set(history.map(w => {
+            const d = new Date(w.endTime);
+            const jan1 = new Date(d.getFullYear(), 0, 1);
+            const weekNum = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+            return `${d.getFullYear()}-W${weekNum}`;
+        }));
+        const avgPerWeek = weekSet.size > 0
+            ? Math.round((history.length / weekSet.size) * 10) / 10
+            : 0;
+
+        return { streak, consistency7, consistency30, consistency90, prStreak, thisMonthCount, thisYearCount, thisWeekCount, avgPerMonth, avgPerYear, avgPerWeek };
     }, [history]);
 
     // Goals summary
@@ -151,6 +186,46 @@ export default function Profile() {
         const avgPct = Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
         return { activeCount: active.length, avgPct, completedCount: completed.length };
     }, [goals, getGoalCurrentValue]);
+
+    // Cardio totals (month / year / week)
+    const cardioTotals = useMemo(() => {
+        if (!history || history.length === 0) return { month: 0, year: 0, week: 0 };
+        const now = new Date();
+        const thisMonth = now.getMonth();
+        const thisYear = now.getFullYear();
+
+        // Start of week (Mon)
+        const startOfWeek = new Date(now);
+        const dow = startOfWeek.getDay();
+        startOfWeek.setDate(startOfWeek.getDate() - (dow === 0 ? 6 : dow - 1));
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        let month = 0, year = 0, week = 0;
+        const cardioMonths = new Set();
+        const cardioYears = new Set();
+        const cardioWeeks = new Set();
+        history.forEach(w => {
+            const d = new Date(w.endTime);
+            let cardioSecs = 0;
+            (w.exercises || []).forEach(ex => {
+                if (ex.target === 'Cardio') cardioSecs += (ex.accumulatedSeconds || 0);
+            });
+            if (cardioSecs > 0) {
+                if (d.getMonth() === thisMonth && d.getFullYear() === thisYear) month += cardioSecs;
+                if (d.getFullYear() === thisYear) year += cardioSecs;
+                if (d >= startOfWeek) week += cardioSecs;
+                cardioMonths.add(`${d.getFullYear()}-${d.getMonth()}`);
+                cardioYears.add(d.getFullYear().toString());
+                const jan1 = new Date(d.getFullYear(), 0, 1);
+                const wn = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+                cardioWeeks.add(`${d.getFullYear()}-W${wn}`);
+            }
+        });
+        const avgCardioMonth = cardioMonths.size > 0 ? Math.round(month / cardioMonths.size) : 0;
+        const avgCardioYear = cardioYears.size > 0 ? Math.round(year / cardioYears.size) : 0;
+        const avgCardioWeek = cardioWeeks.size > 0 ? Math.round(week / cardioWeeks.size) : 0;
+        return { month, year, week, avgCardioMonth, avgCardioYear, avgCardioWeek };
+    }, [history]);
 
     // ── Data Management ──────────────────────────────────────────────────────
     const handleExport = async () => {
@@ -211,6 +286,7 @@ export default function Profile() {
             {stats && (
                 <Section title={t('stats_overview', { defaultValue: 'Stats Overview' })}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        {/* Row 1: Day Streak + PR Streak */}
                         <StatCard
                             icon={<Flame size={24} />}
                             value={stats.streak}
@@ -218,38 +294,46 @@ export default function Profile() {
                             color="#f97316"
                         />
                         <StatCard
-                            icon={<CheckCircle size={24} />}
-                            value={`${stats.consistency}%`}
-                            label={t('consistency_7d', { defaultValue: '7-Day Consistency' })}
-                            color="var(--color-primary)"
-                        />
-                        <StatCard
                             icon={<TrendingUp size={24} />}
                             value={stats.prStreak}
                             label={t('pr_streak')}
                             color="#eab308"
                         />
+
+                        {/* Row 2: Workouts + Avg */}
                         <StatCard
                             icon={<Calendar size={24} />}
-                            value={stats.thisMonthCount}
-                            label={t('workouts_this_month')}
+                            value={[stats.thisMonthCount, stats.thisYearCount, stats.thisWeekCount][workoutPeriod]}
+                            label={[t('workouts_this_month'), t('workouts_this_year'), t('workouts_this_week', { defaultValue: 'Workouts This Week' })][workoutPeriod]}
                             color="#a855f7"
-                        />
-                        <StatCard
-                            icon={<BarChart2 size={24} />}
-                            value={stats.thisYearCount}
-                            label={t('workouts_this_year')}
-                            color="#22c55e"
+                            onClick={() => setWorkoutPeriod(p => (p + 1) % 3)}
                         />
                         <StatCard
                             icon={<Dumbbell size={24} />}
-                            value={stats.avgPerMonth}
-                            label={t('avg_per_month')}
+                            value={[stats.avgPerMonth, stats.avgPerYear, stats.avgPerWeek][avgPeriod]}
+                            label={[t('avg_per_month'), t('avg_per_year', { defaultValue: 'Avg / Year' }), t('avg_per_week', { defaultValue: 'Avg / Week' })][avgPeriod]}
                             color="#ec4899"
+                            onClick={() => setAvgPeriod(p => (p + 1) % 3)}
+                        />
+
+                        {/* Row 3: Cardio + Avg Cardio */}
+                        <StatCard
+                            icon={<Timer size={24} />}
+                            value={fmtSeconds([cardioTotals.month, cardioTotals.year, cardioTotals.week][cardioPeriod])}
+                            label={[t('cardio_this_month', { defaultValue: 'Cardio This Month' }), t('cardio_this_year', { defaultValue: 'Cardio This Year' }), t('cardio_this_week', { defaultValue: 'Cardio This Week' })][cardioPeriod]}
+                            color="#22c55e"
+                            onClick={() => setCardioPeriod(p => (p + 1) % 3)}
+                        />
+                        <StatCard
+                            icon={<Timer size={24} />}
+                            value={fmtSeconds([cardioTotals.avgCardioMonth, cardioTotals.avgCardioYear, cardioTotals.avgCardioWeek][avgCardioPeriod])}
+                            label={[t('avg_cardio_month', { defaultValue: 'Avg Cardio / Month' }), t('avg_cardio_year', { defaultValue: 'Avg Cardio / Year' }), t('avg_cardio_week', { defaultValue: 'Avg Cardio / Week' })][avgCardioPeriod]}
+                            color="#10b981"
+                            onClick={() => setAvgCardioPeriod(p => (p + 1) % 3)}
                         />
                     </div>
 
-                    {/* Goals sub-row */}
+                    {/* Row 4: Goals + Consistency */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0' }}>
                         <div
                             className="card"
@@ -257,24 +341,20 @@ export default function Profile() {
                             style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
                         >
                             <div style={{ color: '#22c55e' }}><Target size={24} /></div>
-                            <span style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: 1 }}>
+                            <span style={{ fontSize: '1.8rem', fontWeight: '800', lineHeight: 1 }}>
                                 {goalStats.activeCount}
                             </span>
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textAlign: 'center', lineHeight: 1.3 }}>
-                                {t('active_goals')}
+                                {t('goals', { defaultValue: 'Goals' })}
                             </span>
                         </div>
-                        <div
-                            className="card"
-                            onClick={() => navigate('/goals')}
-                            style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
-                        >
-                            <div style={{ color: '#eab308' }}><CheckCircle size={24} /></div>
-                            <span style={{ fontSize: '1.4rem', fontWeight: '800', lineHeight: 1 }}>{goalStats.completedCount}</span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textAlign: 'center', lineHeight: 1.3 }}>
-                                {t('completed_goals')}
-                            </span>
-                        </div>
+                        <StatCard
+                            icon={<CheckCircle size={24} />}
+                            value={`${[stats.consistency7, stats.consistency30, stats.consistency90][consistencyPeriod]}%`}
+                            label={[t('consistency_7d', { defaultValue: '7-Day Consistency' }), t('consistency_30d', { defaultValue: '30-Day Consistency' }), t('consistency_90d', { defaultValue: '90-Day Consistency' })][consistencyPeriod]}
+                            color="var(--color-primary)"
+                            onClick={() => setConsistencyPeriod(p => (p + 1) % 3)}
+                        />
                     </div>
                 </Section>
             )}
