@@ -2,7 +2,6 @@
   {
     "version": "0.0.55",
     "changes": [
-      "fixed timer on supersets",
       "Mark potential/actual cardio PRs"
     ]
   },

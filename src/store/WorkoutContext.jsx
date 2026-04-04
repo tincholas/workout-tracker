@@ -206,13 +206,13 @@ export const WorkoutProvider = ({ children }) => {
                 if (needsBwMigration) {
                     currentHistory = currentHistory.map(w => {
                         if (w.bodyWeightSnapshot !== undefined) return w;
-                        
+
                         const workoutDate = new Date(w.endTime);
                         let closestWeight = 80;
-                        
+
                         if (savedWeightMoodLog && savedWeightMoodLog.length > 0) {
                             // Find most recent log prior to or on the workout date
-                            const sortedLogs = [...savedWeightMoodLog].sort((a,b) => new Date(a.date) - new Date(b.date));
+                            const sortedLogs = [...savedWeightMoodLog].sort((a, b) => new Date(a.date) - new Date(b.date));
                             for (const log of sortedLogs) {
                                 if (new Date(log.date) <= workoutDate && log.weight > 0) {
                                     closestWeight = log.weight;
@@ -244,17 +244,17 @@ export const WorkoutProvider = ({ children }) => {
     // Auto-complete active goals that have reached their target
     useEffect(() => {
         if (!isInitialized || goals.length === 0) return;
-        
+
         let changed = false;
         const today = toDateStr(new Date());
 
         const updatedGoals = goals.map(g => {
             if (g.status !== 'active') return g;
             const current = getGoalCurrentValue(g, history, weightMoodLog);
-            const isComplete = g.targetValue > g.initialValue 
-                ? current >= g.targetValue 
+            const isComplete = g.targetValue > g.initialValue
+                ? current >= g.targetValue
                 : current <= g.targetValue;
-                
+
             if (isComplete) {
                 changed = true;
                 trackEvent('goal_achieved', { type: g.type, target_metric: g.targetMetric, context: 'auto' });
@@ -472,10 +472,10 @@ export const WorkoutProvider = ({ children }) => {
         const { id: splitId, name, template } = workoutDef;
         let workout = createWorkout(name, name);
         workout.splitId = splitId;
-        
+
         let currentBw = 80;
         if (weightMoodLog && weightMoodLog.length > 0) {
-            const sorted = [...weightMoodLog].sort((a,b) => new Date(b.date) - new Date(a.date));
+            const sorted = [...weightMoodLog].sort((a, b) => new Date(b.date) - new Date(a.date));
             const latestValid = sorted.find(l => l.weight > 0);
             if (latestValid) currentBw = latestValid.weight;
         }
@@ -679,47 +679,6 @@ export const WorkoutProvider = ({ children }) => {
         });
     };
 
-    const makeSuperset = (exerciseId) => {
-        if (!activeWorkout) return;
-
-        const exercises = [...activeWorkout.exercises];
-        const index = exercises.findIndex(ex => ex.id === exerciseId);
-        if (index <= 0) return; // Cannot superset the first element
-
-        const currentEx = { ...exercises[index] };
-        const prevEx = { ...exercises[index - 1] };
-
-        currentEx.supersetWithAbove = true;
-
-        // Equalize sets lengths to Math.max of both
-        const maxSets = Math.max(currentEx.sets.length, prevEx.sets.length);
-
-        currentEx.sets = [...currentEx.sets];
-        while (currentEx.sets.length < maxSets) {
-            currentEx.sets.push(createSet());
-        }
-
-        prevEx.sets = [...prevEx.sets];
-        while (prevEx.sets.length < maxSets) {
-            prevEx.sets.push(createSet());
-        }
-
-        exercises[index - 1] = prevEx;
-        exercises[index] = currentEx;
-
-        setActiveWorkout({ ...activeWorkout, exercises });
-    };
-
-    const breakSuperset = (exerciseId) => {
-        if (!activeWorkout) return;
-        const exercises = activeWorkout.exercises.map(ex => {
-            if (ex.id === exerciseId) {
-                return { ...ex, supersetWithAbove: false };
-            }
-            return ex;
-        });
-        setActiveWorkout({ ...activeWorkout, exercises });
-    };
 
     const reorderExercise = (exerciseId, direction) => {
         if (!activeWorkout) return;
@@ -811,9 +770,9 @@ export const WorkoutProvider = ({ children }) => {
                 if (ex.id !== exerciseId) return ex;
                 if (ex.sets.length <= 1) return ex; // Don't remove the last set
 
-                // If a specific setId is provided (from the superset remove target), filter it out
+                // If a specific setId is provided, filter it out
                 const newSets = setId ? ex.sets.filter(s => s.id !== setId) : ex.sets.slice(0, -1);
-                
+
                 // Safety net: if removing by ID somehow clears all sets, fallback to leaving the first one
                 if (newSets.length === 0) return ex;
 
@@ -884,8 +843,7 @@ export const WorkoutProvider = ({ children }) => {
             cancelWorkout,
             addExercise,
             removeExercise,
-            makeSuperset,
-            breakSuperset,
+
             reorderExercise,
             renameExercise,
             toggleUnit,

@@ -61,7 +61,6 @@ export const createExercise = (name, target = '', bodyweight = false) => {
         name,
         target,
         bodyweight: isBodyweight,
-        supersetWithAbove: false,
         sets: [createSet(), createSet(), createSet(), createSet()], // Default 4 sets
     };
 };

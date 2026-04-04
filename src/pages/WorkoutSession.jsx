@@ -4,7 +4,7 @@ import { useWorkout } from '../store/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import ExerciseCard from '../components/ExerciseCard';
 import ExercisePickerModal from '../components/ExercisePickerModal';
-import SupersetCard from '../components/SupersetCard';
+
 import { Plus, Save, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -91,39 +91,9 @@ export default function WorkoutSession() {
             <div
                 className='exercise-list'
             >
-                {(() => {
-                    const grouped = [];
-                    const exercises = activeWorkout.exercises;
-
-                    for (let i = 0; i < exercises.length; i++) {
-                        const current = { ...exercises[i] }; // Clone to avoid mutating context directly if we need to heal
-
-                        // Auto-heal invalid superset flags (first item or consecutive)
-                        if (current.supersetWithAbove && i === 0) {
-                            current.supersetWithAbove = false;
-                        }
-                        if (current.supersetWithAbove && i > 0 && exercises[i - 1].supersetWithAbove) {
-                            current.supersetWithAbove = false;
-                        }
-
-                        if (current.supersetWithAbove) {
-                            // Group with previous
-                            grouped[grouped.length - 1].push(current);
-                        } else {
-                            // Start new group
-                            grouped.push([current]);
-                        }
-                    }
-
-                    return grouped.map((group) => {
-                        if (group.length === 1) {
-                            return <ExerciseCard key={group[0].id} exercise={group[0]} />;
-                        } else if (group.length === 2) {
-                            return <SupersetCard key={`${group[0].id}-${group[1].id}`} exercise1={group[0]} exercise2={group[1]} />;
-                        }
-                        return null; // Fallback
-                    });
-                })()}
+                {activeWorkout.exercises.map(exercise => (
+                    <ExerciseCard key={exercise.id} exercise={exercise} />
+                ))}
             </div>
 
             {/* Add Exercise Button */}
