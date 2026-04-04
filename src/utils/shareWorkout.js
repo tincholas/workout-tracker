@@ -1,4 +1,5 @@
 import { trackEvent } from './analytics';
+import { fmtSeconds } from './formatTime';
 
 export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = {}, completedGoals = []) => {
     const date = new Date(workout.endTime).toLocaleDateString();
@@ -11,10 +12,10 @@ export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = 
         text += `🔹 ${ex.name}${hasExercisePR ? ' 🏆' : ''}`;
 
         if (ex.target === 'Cardio') {
-            const mins = ((ex.accumulatedSeconds || 0) / 60).toFixed(1);
+            const duration = fmtSeconds(ex.accumulatedSeconds || 0);
             const prRecord = personalRecords[ex.name];
             const isPR = prRecord && prRecord.setId === ex.id;
-            text += `: ${mins} mins${isPR ? ' 🏆' : ''}\n`;
+            text += `: ${duration}${isPR ? ' 🏆' : ''}\n`;
         } else {
             text += `\n`;
             const completedSets = ex.sets.filter(s => s.completed);
@@ -37,7 +38,7 @@ export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = 
     if (completedGoals.length > 0) {
         text += `🎯 Goal${completedGoals.length > 1 ? 's' : ''} Completed!\n`;
         completedGoals.forEach(g => {
-            const fmt = (v) => g.isCardio ? `${(v / 60).toFixed(1)} min` : `${v} kg`;
+            const fmt = (v) => g.isCardio ? fmtSeconds(v) : `${v} kg`;
             const days = Math.max(0, Math.floor((new Date() - new Date(g.createdAt)) / 86400000));
             text += `   • ${g.exerciseName}: ${fmt(g.targetValue)} (after ${days} days)\n`;
         });

@@ -64,6 +64,16 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
         touchStartRef.current = null;
     };
 
+    // Sync body background with overlay so the safe area behind the dynamic
+    // island matches the overlay colour.  WebKit clips fixed-element backgrounds
+    // at the safe-area boundary, but the body's own background IS painted there.
+    useEffect(() => {
+        if (!expanded) return;
+        const prev = document.body.style.backgroundColor;
+        document.body.style.backgroundColor = '#0a0a0a';
+        return () => { document.body.style.backgroundColor = prev; };
+    }, [expanded]);
+
     if (timeLeft <= 0) return null;
 
     // The expanded overlay is portalled to document.body so it escapes
@@ -82,6 +92,9 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                         right: 0,
                         bottom: 0,
                         zIndex: 200,
+                        background: 'rgba(0,0,0,0.78)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
                     }}
                 >
                     <motion.div
@@ -96,9 +109,6 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                         style={{
                             width: '100%',
                             height: '100%',
-                            background: 'rgba(0,0,0,0.78)',
-                            backdropFilter: 'blur(8px)',
-                            WebkitBackdropFilter: 'blur(8px)',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
@@ -106,96 +116,96 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                             gap: '2.5rem',
                         }}
                     >
-                    {/* Large ring with MM:SS inside */}
-                    <motion.div
-                        initial={{ scale: 0.4, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.4, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                        style={{
-                            position: 'relative',
-                            width: expandedSize,
-                            height: expandedSize,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <svg
-                            width={expandedSize}
-                            height={expandedSize}
-                            style={{ transform: 'rotate(-90deg)', position: 'absolute', inset: 0 }}
+                        {/* Large ring with MM:SS inside */}
+                        <motion.div
+                            initial={{ scale: 0.4, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.4, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                            style={{
+                                position: 'relative',
+                                width: expandedSize,
+                                height: expandedSize,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
                         >
-                            <circle
-                                stroke="rgba(255,255,255,0.15)"
-                                fill="transparent"
-                                strokeWidth={expandedStroke}
-                                r={expandedRadius}
-                                cx={expandedSize / 2}
-                                cy={expandedSize / 2}
-                            />
-                            <circle
-                                stroke="var(--color-primary)"
-                                fill="transparent"
-                                strokeWidth={expandedStroke}
-                                strokeDasharray={expandedCircumference}
-                                strokeDashoffset={expandedOffset}
-                                strokeLinecap="round"
-                                r={expandedRadius}
-                                cx={expandedSize / 2}
-                                cy={expandedSize / 2}
-                                style={{ transition: 'stroke-dashoffset 0.2s linear' }}
-                            />
-                        </svg>
+                            <svg
+                                width={expandedSize}
+                                height={expandedSize}
+                                style={{ transform: 'rotate(-90deg)', position: 'absolute', inset: 0 }}
+                            >
+                                <circle
+                                    stroke="rgba(255,255,255,0.15)"
+                                    fill="transparent"
+                                    strokeWidth={expandedStroke}
+                                    r={expandedRadius}
+                                    cx={expandedSize / 2}
+                                    cy={expandedSize / 2}
+                                />
+                                <circle
+                                    stroke="var(--color-primary)"
+                                    fill="transparent"
+                                    strokeWidth={expandedStroke}
+                                    strokeDasharray={expandedCircumference}
+                                    strokeDashoffset={expandedOffset}
+                                    strokeLinecap="round"
+                                    r={expandedRadius}
+                                    cx={expandedSize / 2}
+                                    cy={expandedSize / 2}
+                                    style={{ transition: 'stroke-dashoffset 0.2s linear' }}
+                                />
+                            </svg>
 
-                        {/* Time text centred inside the ring */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none', userSelect: 'none' }}>
-                            <span style={{
-                                fontFamily: 'monospace',
+                            {/* Time text centred inside the ring */}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none', userSelect: 'none' }}>
+                                <span style={{
+                                    fontFamily: 'monospace',
+                                    fontWeight: 'bold',
+                                    color: 'var(--color-primary)',
+                                    fontSize: `${expandedSize * 0.18}px`,
+                                    lineHeight: 1,
+                                    letterSpacing: '-0.02em',
+                                }}>
+                                    {formatTime(timeLeft)}
+                                </span>
+                                <span style={{
+                                    fontFamily: 'monospace',
+                                    color: 'rgba(255,255,255,0.4)',
+                                    fontSize: `${expandedSize * 0.06}px`,
+                                    marginTop: '0.4rem',
+                                    letterSpacing: '0.05em',
+                                }}>
+                                    / {formatTime(Math.floor(totalDuration / 1000))}
+                                </span>
+                            </div>
+                        </motion.div>
+
+                        {/* +1m button below the ring */}
+                        <motion.button
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 16 }}
+                            transition={{ delay: 0.1, duration: 0.2 }}
+                            onClick={(e) => { e.stopPropagation(); extendRestTimer(60); }}
+                            style={{
+                                padding: '0.75rem 2rem',
+                                borderRadius: '999px',
+                                border: '1px solid rgba(255,255,255,0.35)',
+                                background: 'rgba(255,255,255,0.15)',
+                                color: '#ffffff',
+                                fontSize: '1rem',
                                 fontWeight: 'bold',
-                                color: 'var(--color-primary)',
-                                fontSize: `${expandedSize * 0.18}px`,
-                                lineHeight: 1,
-                                letterSpacing: '-0.02em',
-                            }}>
-                                {formatTime(timeLeft)}
-                            </span>
-                            <span style={{
-                                fontFamily: 'monospace',
-                                color: 'rgba(255,255,255,0.4)',
-                                fontSize: `${expandedSize * 0.06}px`,
-                                marginTop: '0.4rem',
-                                letterSpacing: '0.05em',
-                            }}>
-                                / {formatTime(Math.floor(totalDuration / 1000))}
-                            </span>
-                        </div>
-                    </motion.div>
-
-                    {/* +1m button below the ring */}
-                    <motion.button
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 16 }}
-                        transition={{ delay: 0.1, duration: 0.2 }}
-                        onClick={(e) => { e.stopPropagation(); extendRestTimer(60); }}
-                        style={{
-                            padding: '0.75rem 2rem',
-                            borderRadius: '999px',
-                            border: '1px solid rgba(255,255,255,0.35)',
-                            background: 'rgba(255,255,255,0.15)',
-                            color: '#ffffff',
-                            fontSize: '1rem',
-                            fontWeight: 'bold',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.4rem',
-                            cursor: 'pointer',
-                            boxShadow: 'none',
-                        }}
-                    >
-                        <Plus size={18} /> 1 min
-                    </motion.button>
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                cursor: 'pointer',
+                                boxShadow: 'none',
+                            }}
+                        >
+                            <Plus size={18} /> 1 min
+                        </motion.button>
                     </motion.div>
                 </div>
             )}

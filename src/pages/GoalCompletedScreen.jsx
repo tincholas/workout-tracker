@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 import { Target, Share2, Home, Clock, TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { trackEvent } from '../utils/analytics';
+import { fmtSeconds } from '../utils/formatTime';
 
 const KG_TO_LBS = 2.20462;
 
@@ -17,7 +18,7 @@ function formatValue(val, goal, preferredUnit) {
         return `${display} ${unit}`;
     }
     // Cardio: stored as seconds
-    return `${(val / 60).toFixed(1)} min`;
+    return fmtSeconds(val);
 }
 
 function daysSince(dateStr) {
@@ -58,13 +59,13 @@ export default function GoalCompletedScreen() {
     const handleShare = async () => {
         const text = `🎯 ${t('goal_completed')}\n${goalName}: ${initialFmt} → ${targetFmt}\n${t('days_active')}: ${days}`;
         if (navigator.share) {
-            try { 
-                await navigator.share({ title: t('goal_completed'), text }); 
+            try {
+                await navigator.share({ title: t('goal_completed'), text });
                 trackEvent('goal_shared', { method: 'native' });
             } catch { }
         } else {
-            try { 
-                await navigator.clipboard.writeText(text); 
+            try {
+                await navigator.clipboard.writeText(text);
                 trackEvent('goal_shared', { method: 'clipboard' });
             } catch { }
         }

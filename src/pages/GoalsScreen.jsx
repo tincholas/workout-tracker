@@ -4,6 +4,7 @@ import { useWorkout } from '../store/WorkoutContext';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, Plus, Trash2, Target, CheckCircle2, ChevronDown } from 'lucide-react';
 import CreateGoalModal from '../components/CreateGoalModal';
+import { fmtSeconds } from '../utils/formatTime';
 
 const KG_TO_LBS = 2.20462;
 
@@ -18,7 +19,7 @@ function formatValue(val, goal, preferredUnit, t) {
             : Math.round(val * 10) / 10;
         return `${display} ${preferredUnit === 'LBS' ? 'lbs' : 'kg'}`;
     }
-    return `${(val / 60).toFixed(1)} min`;
+    return fmtSeconds(val);
 }
 
 function daysSince(dateStr) {

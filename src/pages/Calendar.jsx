@@ -8,6 +8,7 @@ import MuscleGroupPieChart from '../components/MuscleGroupPieChart';
 import { shareWorkout } from '../utils/shareWorkout';
 import { ChevronLeft, ChevronRight, X, Share2, Trophy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { fmtSeconds } from '../utils/formatTime';
 
 export default function Calendar({ embedded = false }) {
     const { history, preferredUnit, extraTypes, personalRecords, exercisePRs, weightMoodLog } = useWorkout();
@@ -312,7 +313,7 @@ export default function Calendar({ embedded = false }) {
                                                         alignItems: 'center',
                                                         gap: '6px'
                                                     }}>
-                                                        {((ex.accumulatedSeconds || 0) / 60).toFixed(1)} {t('minutes')}
+                                                        {fmtSeconds(ex.accumulatedSeconds || 0)}
                                                         {prRecord && prRecord.setId === ex.id && <Trophy size={12} color="#eab308" />}
                                                     </span>
                                                 ) : (

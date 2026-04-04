@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useWorkout } from '../store/WorkoutContext';
 import { useTranslation } from 'react-i18next';
 import { EXERCISE_DATABASE } from '../store/models';
+import { fmtSeconds } from '../utils/formatTime';
 
 const KG_TO_LBS = 2.20462;
 
@@ -71,7 +72,7 @@ export default function CreateGoalModal({ onClose }) {
                 : Math.round(initialValue * 10) / 10;
             return `${val} ${unit}`;
         }
-        return `${(initialValue / 60).toFixed(1)} min`;
+        return fmtSeconds(initialValue);
     }, [initialValue, goalType, isCardio, targetMetric, preferredUnit, unit, t]);
 
     const handleCreate = () => {

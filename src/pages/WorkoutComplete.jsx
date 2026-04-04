@@ -6,6 +6,7 @@ import { Trophy, Calendar, CheckCircle, Home, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { shareWorkout } from '../utils/shareWorkout';
 import { useTranslation } from 'react-i18next';
+import { fmtSeconds } from '../utils/formatTime';
 
 export default function WorkoutComplete() {
     const { history, personalRecords, exercisePRs, goals } = useWorkout();
@@ -245,7 +246,7 @@ export default function WorkoutComplete() {
                                     {t(`exercises.${pr.exercise}`, { defaultValue: pr.exercise })}
                                 </span>
                                 {pr.isCardio ? (
-                                    <span>{((pr.duration || 0) / 60).toFixed(1)} {t('minutes')}</span>
+                                    <span>{fmtSeconds(pr.duration || 0)}</span>
                                 ) : pr.isExercisePR ? (
                                     <span>{pr.totalVolume} {t('volume_unit', { defaultValue: 'kg vol' })}</span>
                                 ) : (
@@ -270,7 +271,7 @@ export default function WorkoutComplete() {
                     <div style={{ display: 'grid', gap: '0.5rem' }}>
                         {completedGoals.map(g => {
                             const days = Math.max(0, Math.floor((new Date() - new Date(g.createdAt)) / 86400000));
-                            const fmt = (v) => g.isCardio ? `${(v / 60).toFixed(1)} min` : `${v} kg`;
+                            const fmt = (v) => g.isCardio ? fmtSeconds(v) : `${v} kg`;
                             return (
                                 <div key={g.id} className="card" style={{
                                     padding: '1rem',
