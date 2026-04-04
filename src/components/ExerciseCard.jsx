@@ -129,11 +129,11 @@ export default function ExerciseCard({ exercise, ...props }) {
     const currentIndex = activeWorkout?.exercises.findIndex(ex => ex.id === exercise.id);
     const prevExercise = currentIndex > 0 ? activeWorkout?.exercises[currentIndex - 1] : null;
 
-    const canMakeSuperset = 
-        prevExercise && 
-        prevExercise.target !== 'Cardio' && 
-        exercise.target !== 'Cardio' && 
-        !prevExercise.supersetWithAbove && 
+    const canMakeSuperset =
+        prevExercise &&
+        prevExercise.target !== 'Cardio' &&
+        exercise.target !== 'Cardio' &&
+        !prevExercise.supersetWithAbove &&
         !exercise.supersetWithAbove;
 
     return (
@@ -156,7 +156,7 @@ export default function ExerciseCard({ exercise, ...props }) {
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <h3 
+                    <h3
                         style={{ margin: 0, fontSize: '1.1rem', cursor: 'pointer' }}
                         onClick={() => navigate(`/analytics?exercise=${encodeURIComponent(exercise.name)}&back=/session`)}
                     >
@@ -232,25 +232,27 @@ export default function ExerciseCard({ exercise, ...props }) {
                                 >
                                     <ArrowDown size={16} /> {t('move_down')}
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        const newVal = !exercise.unilateral;
-                                        // Scale weight on uncompleted sets and reset side flags
-                                        const updatedSets = exercise.sets.map(s => {
-                                            if (s.completed) return s;
-                                            const rawWeight = newVal
-                                                ? (s.weight || 0) / 2          // bilateral → unilateral: halve
-                                                : (s.weight || 0) * 2;         // unilateral → bilateral: double
-                                            const scaledWeight = Math.round(rawWeight * 2) / 2; // round to 0.5 kg
-                                            return { ...s, unilateral: newVal, leftDone: false, rightDone: false, weight: scaledWeight };
-                                        });
-                                        updateExercise(exercise.id, { unilateral: newVal, sets: updatedSets });
-                                        setShowMenu(false);
-                                    }}
-                                    style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
-                                >
-                                    🔁 {exercise.unilateral ? t('make_bilateral', { defaultValue: 'Make Bilateral' }) : t('make_unilateral', { defaultValue: 'Make Unilateral' })}
-                                </button>
+                                {!isCardio && (
+                                    <button
+                                        onClick={() => {
+                                            const newVal = !exercise.unilateral;
+                                            // Scale weight on uncompleted sets and reset side flags
+                                            const updatedSets = exercise.sets.map(s => {
+                                                if (s.completed) return s;
+                                                const rawWeight = newVal
+                                                    ? (s.weight || 0) / 2          // bilateral → unilateral: halve
+                                                    : (s.weight || 0) * 2;         // unilateral → bilateral: double
+                                                const scaledWeight = Math.round(rawWeight * 2) / 2; // round to 0.5 kg
+                                                return { ...s, unilateral: newVal, leftDone: false, rightDone: false, weight: scaledWeight };
+                                            });
+                                            updateExercise(exercise.id, { unilateral: newVal, sets: updatedSets });
+                                            setShowMenu(false);
+                                        }}
+                                        style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#fff', textAlign: 'left', cursor: 'pointer', borderBottom: '1px solid #333' }}
+                                    >
+                                        🔁 {exercise.unilateral ? t('make_bilateral', { defaultValue: 'Make Bilateral' }) : t('make_unilateral', { defaultValue: 'Make Unilateral' })}
+                                    </button>
+                                )}
                                 {canMakeSuperset && (
                                     <button
                                         onClick={() => { makeSuperset(exercise.id); setShowMenu(false); }}
