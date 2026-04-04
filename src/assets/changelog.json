@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.0.56",
+    "changes": [
+      "fixed PR hints",
+      "restructured profile screen",
+      "changed how minutes and seconds are displayed",
+      "removed supersets",
+      "Cardio exercises cannot be unilateral"
+    ]
+  },
+  {
     "version": "0.0.55",
     "changes": [
       "Mark potential/actual cardio PRs"
