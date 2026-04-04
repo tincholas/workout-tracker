@@ -200,7 +200,7 @@ export default function Profile() {
         startOfWeek.setDate(startOfWeek.getDate() - (dow === 0 ? 6 : dow - 1));
         startOfWeek.setHours(0, 0, 0, 0);
 
-        let month = 0, year = 0, week = 0;
+        let month = 0, year = 0, week = 0, totalCardio = 0;
         const cardioMonths = new Set();
         const cardioYears = new Set();
         const cardioWeeks = new Set();
@@ -211,6 +211,7 @@ export default function Profile() {
                 if (ex.target === 'Cardio') cardioSecs += (ex.accumulatedSeconds || 0);
             });
             if (cardioSecs > 0) {
+                totalCardio += cardioSecs;
                 if (d.getMonth() === thisMonth && d.getFullYear() === thisYear) month += cardioSecs;
                 if (d.getFullYear() === thisYear) year += cardioSecs;
                 if (d >= startOfWeek) week += cardioSecs;
@@ -221,9 +222,9 @@ export default function Profile() {
                 cardioWeeks.add(`${d.getFullYear()}-W${wn}`);
             }
         });
-        const avgCardioMonth = cardioMonths.size > 0 ? Math.round(month / cardioMonths.size) : 0;
-        const avgCardioYear = cardioYears.size > 0 ? Math.round(year / cardioYears.size) : 0;
-        const avgCardioWeek = cardioWeeks.size > 0 ? Math.round(week / cardioWeeks.size) : 0;
+        const avgCardioMonth = cardioMonths.size > 0 ? Math.round(totalCardio / cardioMonths.size) : 0;
+        const avgCardioYear = cardioYears.size > 0 ? Math.round(totalCardio / cardioYears.size) : 0;
+        const avgCardioWeek = cardioWeeks.size > 0 ? Math.round(totalCardio / cardioWeeks.size) : 0;
         return { month, year, week, avgCardioMonth, avgCardioYear, avgCardioWeek };
     }, [history]);
 

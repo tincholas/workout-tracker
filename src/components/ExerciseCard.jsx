@@ -42,7 +42,7 @@ export default function ExerciseCard({ exercise, ...props }) {
     // --- PR Logic (Single Best Set) ---
     const { personalRecords, exercisePRs } = useWorkout();
 
-    const activePRSetId = React.useMemo(() => {
+    const { activePRSetId, effectivePRVolume } = React.useMemo(() => {
         // Start with historical best
         let maxVol = personalRecords[exercise.name]?.volume || 0;
         let maxWeight = personalRecords[exercise.name]?.weight || 0;
@@ -62,7 +62,7 @@ export default function ExerciseCard({ exercise, ...props }) {
             }
         });
 
-        return bestSetId;
+        return { activePRSetId: bestSetId, effectivePRVolume: maxVol };
     }, [exercise.sets, exercise.name, personalRecords, exercise.bodyweight, activeWorkout?.bodyWeightSnapshot]);
 
     // --- Exercise-Level PR Logic ---
@@ -295,7 +295,7 @@ export default function ExerciseCard({ exercise, ...props }) {
                                         isUnilateral={!!exercise.unilateral}
                                         exerciseIsUnilateral={!!exercise.unilateral}
                                         isBodyweight={!!exercise.bodyweight}
-                                        prVolume={personalRecords[exercise.name]?.volume || 0}
+                                        prVolume={effectivePRVolume}
                                         bodyWeightSnapshot={activeWorkout?.bodyWeightSnapshot}
                                     />
                                 </motion.div>
