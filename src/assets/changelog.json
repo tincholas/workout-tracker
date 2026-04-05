@@ -1,5 +1,11 @@
 [
   {
+    "version": "0.0.57",
+    "changes": [
+      "Analytics event for changelog"
+    ]
+  },
+  {
     "version": "0.0.56",
     "changes": [
       "fixed PR hints",
