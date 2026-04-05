@@ -6,6 +6,16 @@ import { PartyPopper, ChevronRight } from 'lucide-react';
 export default function ChangelogModal({ newVersions, onClose }) {
     const { t } = useTranslation();
 
+    // Fire GA event when changelog is shown
+    React.useEffect(() => {
+        if (window.gtag) {
+            window.gtag('event', 'changelog_viewed', {
+                versions_shown: newVersions.map(v => v.version).join(','),
+                version_count: newVersions.length
+            });
+        }
+    }, [newVersions]);
+
     return createPortal(
         <div style={{
             position: 'fixed', inset: 0, zIndex: 9999,
