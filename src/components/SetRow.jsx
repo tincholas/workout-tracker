@@ -38,7 +38,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
         onUpdate({ [field]: value });
     };
 
-    const handleWeightChange = (e) => { setTempValue(e.target.value); };
+    const handleWeightChange = (e) => { setTempValue(e.target.value.replace(',', '.')); };
 
     const handleWeightFocus = () => {
         prevWeightRef.current = set.weight;
@@ -70,7 +70,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
         return set.reps;
     };
 
-    const handleRepsChange = (e) => { setTempReps(e.target.value); };
+    const handleRepsChange = (e) => { setTempReps(e.target.value.replace(',', '.')); };
     const handleRepsFocus = () => { prevRepsRef.current = set.reps; setTempReps(''); setRepsFocused(true); };
     const handleRepsBlur = () => {
         setRepsFocused(false);
@@ -195,7 +195,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
 
             <div style={{ position: 'relative', zIndex: 1 }}>
                 <motion.input
-                    type="number"
+                    type="text"
                     whileFocus={{ scale: 1.05, borderColor: 'var(--color-primary)' }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     inputMode="decimal"
@@ -222,7 +222,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
 
             <div style={{ position: 'relative', zIndex: 1 }}>
                 <motion.input
-                    type="number"
+                    type="text"
                     whileFocus={{ scale: 1.05, borderColor: 'var(--color-primary)' }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     inputMode="decimal"

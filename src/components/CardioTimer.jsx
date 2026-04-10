@@ -119,7 +119,7 @@ export default function CardioTimer({ exercise }) {
     };
 
     const handleChange = (e) => {
-        setLocalInput(e.target.value);
+        setLocalInput(e.target.value.replace(',', '.'));
     };
 
     // Visuals
@@ -133,7 +133,8 @@ export default function CardioTimer({ exercise }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1 }}>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Target Time (Minutes)</label>
                     <input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         className="input"
                         placeholder="0"
                         value={localInput}

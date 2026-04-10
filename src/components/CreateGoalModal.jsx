@@ -225,7 +225,8 @@ export default function CreateGoalModal({ onClose }) {
                         </label>
                         <input
                             className="input"
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             min="0"
                             step={(goalType === 'exercise' && (isCardio || targetMetric === 'reps')) ? '1' : '0.1'}
                             placeholder={
@@ -233,7 +234,7 @@ export default function CreateGoalModal({ onClose }) {
                                     (goalType === 'exercise' && targetMetric === 'reps' ? 'e.g. 15' : `e.g. ${preferredUnit === 'LBS' ? '132' : '60'}`)
                             }
                             value={targetDisplay}
-                            onChange={e => setTargetDisplay(e.target.value)}
+                            onChange={e => setTargetDisplay(e.target.value.replace(',', '.'))}
                         />
                     </div>
                 )}

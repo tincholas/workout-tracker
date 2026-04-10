@@ -409,11 +409,12 @@ export default function Profile() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
                             className="input"
                             value={Math.floor(restTimer.seconds / 60)}
                             onChange={(e) => {
-                                const mins = Math.max(0, parseInt(e.target.value) || 0);
+                                const mins = Math.max(0, parseInt(e.target.value.replace(',', '.')) || 0);
                                 setRestTimer({ enabled: mins === 0 ? false : restTimer.enabled, seconds: mins * 60 });
                             }}
                             style={{ flex: 1 }}

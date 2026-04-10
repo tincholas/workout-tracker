@@ -520,21 +520,27 @@ export const WorkoutProvider = ({ children }) => {
 
         const endTime = new Date();
 
-        // Finalize any running timers
-        const finalizedExercises = activeWorkout.exercises.map(ex => {
-            if (ex.target === 'Cardio' && ex.timerState === 'running' && ex.timerStart) {
-                const start = new Date(ex.timerStart).getTime();
-                const now = endTime.getTime();
-                const elapsed = (now - start) / 1000;
-                return {
-                    ...ex,
-                    timerState: 'finished',
-                    timerStart: null,
-                    accumulatedSeconds: (ex.accumulatedSeconds || 0) + elapsed
-                };
-            }
-            return ex;
-        });
+        // Finalize any running timers and filter uncompleted sets/exercises
+        const finalizedExercises = activeWorkout.exercises
+            .map(ex => {
+                let updatedEx = { ...ex };
+                if (updatedEx.target === 'Cardio' && updatedEx.timerState === 'running' && updatedEx.timerStart) {
+                    const start = new Date(updatedEx.timerStart).getTime();
+                    const now = endTime.getTime();
+                    const elapsed = (now - start) / 1000;
+                    updatedEx = {
+                        ...updatedEx,
+                        timerState: 'finished',
+                        timerStart: null,
+                        accumulatedSeconds: (updatedEx.accumulatedSeconds || 0) + elapsed
+                    };
+                }
+                // Only keep sets that were actually completed
+                if (updatedEx.target !== 'Cardio' && updatedEx.sets) {
+                    updatedEx.sets = updatedEx.sets.filter(s => s.completed);
+                }
+                return updatedEx;
+            });
 
         // Calculate if this workout had any PRs
         let hadPR = false;

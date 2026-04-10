@@ -278,7 +278,7 @@ export default function Calendar({ embedded = false }) {
                                 </button>
                             </div>
                             <div style={{ display: 'grid', gap: '1rem' }}>
-                                {w.exercises.map(ex => {
+                                {w.exercises.filter(ex => ex.target === 'Cardio' ? (ex.accumulatedSeconds || 0) > 0 : ex.sets.some(s => s.completed)).map(ex => {
                                     const prRecord = personalRecords[ex.name];
                                     const hasExercisePR = exercisePRs[ex.name]?.workoutId === w.id;
 

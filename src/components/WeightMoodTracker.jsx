@@ -191,9 +191,10 @@ export default function WeightMoodTracker() {
                         <button onClick={() => adjustWeight(-step)} style={stepBtnStyle} aria-label="Decrease weight">−</button>
                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 value={displayWeight}
-                                onChange={e => setDisplayWeight(e.target.value)}
+                                onChange={e => setDisplayWeight(e.target.value.replace(',', '.'))}
                                 onBlur={handleWeightBlur}
                                 step={step}
                                 min={kgToDisplay(MIN_WEIGHT_KG, preferredUnit)}

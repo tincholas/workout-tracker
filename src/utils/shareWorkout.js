@@ -5,7 +5,7 @@ export const shareWorkout = async (workout, personalRecords = {}, exercisePRs = 
     const date = new Date(workout.endTime).toLocaleDateString();
     let text = `🏋️ ${workout.name} (${date})\n\n`;
 
-    workout.exercises.forEach(ex => {
+    workout.exercises.filter(ex => ex.target === 'Cardio' ? (ex.accumulatedSeconds || 0) > 0 : ex.sets.some(s => s.completed)).forEach(ex => {
         // Check for exercise-level PR (total volume)
         const hasExercisePR = exercisePRs[ex.name]?.workoutId === workout.id && ex.target !== 'Cardio';
 
