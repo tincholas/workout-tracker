@@ -650,7 +650,7 @@ export const WorkoutProvider = ({ children }) => {
         }
 
         // Build the new exercise, pre-filling sets with last session's weight/reps
-        const baseExercise = createExercise(name, target);
+        const baseExercise = createExercise(name, target, typeof exerciseOrName === 'object' ? !!exerciseOrName.bodyweight : false);
         if (target === 'Cardio') {
             baseExercise.targetTimeMinutes = lastEntry?.targetTimeMinutes ?? 10;
         }

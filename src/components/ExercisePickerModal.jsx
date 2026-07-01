@@ -11,6 +11,7 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
     const { t } = useTranslation();
 
     const [newExerciseTarget, setNewExerciseTarget] = useState('');
+    const [newExerciseBodyweight, setNewExerciseBodyweight] = useState(false);
 
     const groupedExercises = useMemo(() => {
         const groups = {};
@@ -75,6 +76,13 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
         return result;
     }, [groupedExercises, searchTerm, t]);
 
+    const exactMatchExists = useMemo(() => {
+        const lowerSearch = searchTerm.trim().toLowerCase();
+        return Object.values(groupedExercises).flat().some(ex =>
+            ex.name.toLowerCase() === lowerSearch
+        );
+    }, [groupedExercises, searchTerm]);
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -131,28 +139,41 @@ export default function ExercisePickerModal({ onClose, onSelect }) {
                 ))}
 
                 {Object.values(filteredGroups).every(g => g.length === 0) && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-                        <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>{t('no_matches')}</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{t('convert_custom')}</label>
-                            <select
-                                className="input"
-                                style={{ padding: '0.8rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
-                                value={newExerciseTarget}
-                                onChange={e => setNewExerciseTarget(e.target.value)}
-                            >
-                                <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>{t('select_muscle_group')}</option>
-                                {MUSCLE_GROUPS.map(g => (
-                                    <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
-                                ))}
-                            </select>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => onSelect({ name: searchTerm, target: newExerciseTarget || 'Custom' })}
-                            >
-                                {t('create_exercise', { name: searchTerm })}
-                            </button>
+                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem' }}>{t('no_matches')}</p>
+                )}
+
+                {searchTerm.trim() !== '' && !exactMatchExists && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+                        <label style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{t('convert_custom')}</label>
+                        <select
+                            className="input"
+                            style={{ padding: '0.8rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
+                            value={newExerciseTarget}
+                            onChange={e => setNewExerciseTarget(e.target.value)}
+                        >
+                            <option value="" style={{ backgroundColor: 'var(--bg-card)' }}>{t('select_muscle_group')}</option>
+                            {MUSCLE_GROUPS.map(g => (
+                                <option key={g} value={g} style={{ backgroundColor: 'var(--bg-card)' }}>{g}</option>
+                            ))}
+                        </select>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem', marginBottom: '0.25rem' }}>
+                            <input
+                                type="checkbox"
+                                id="newBodyweightToggle"
+                                checked={newExerciseBodyweight}
+                                onChange={e => setNewExerciseBodyweight(e.target.checked)}
+                                style={{ accentColor: 'var(--primary)', width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                            />
+                            <label htmlFor="newBodyweightToggle" style={{ fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                                {t('bodyweight_exercise', { defaultValue: 'Bodyweight Exercise' })}
+                            </label>
                         </div>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => onSelect({ name: searchTerm, target: newExerciseTarget || 'Custom', bodyweight: newExerciseBodyweight })}
+                        >
+                            {t('create_exercise', { name: searchTerm })}
+                        </button>
                     </div>
                 )}
             </motion.div>
