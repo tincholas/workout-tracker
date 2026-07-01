@@ -160,7 +160,7 @@ export default function CardioTimer({ exercise }) {
                         style={{ padding: '0.8rem', fontSize: '1.1rem' }}
                     />
                     {isFocused && prHintMinutes != null && (
-                        <div style={hintStyle}>🏆 > {prHintMinutes} min for PR</div>
+                        <div style={hintStyle}>🏆 &gt; {prHintMinutes} min for PR</div>
                     )}
                 </div>
 
