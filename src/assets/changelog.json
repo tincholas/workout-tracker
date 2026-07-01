@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.0.71",
+    "changes": [
+      "various fixes to calendar view",
+      "Added max time display for cardio exercises",
+      "fixed timer animation",
+      "Improved label on the volume charts",
+      "Fixed adding new exercises",
+      "missed a piece of last commit",
+      "Added cardio PR hint and fixed leading 0s in weight tracker",
+      "allowed , sepparator, and don't track non-completed sets"
+    ]
+  },
+  {
     "version": "0.0.57",
     "changes": [
       "Analytics event for changelog"
