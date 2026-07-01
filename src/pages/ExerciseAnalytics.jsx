@@ -65,20 +65,26 @@ export default function ExerciseAnalytics() {
 
         const allDates = new Set();
         const dateValuesMap = {};
+        const dateSetsMap = {};
 
         const processExercise = (ex, dateKey) => {
             let val = 0;
+            const completedSets = [];
             if (ex.target === 'Cardio') {
                 val = Number(((ex.accumulatedSeconds || 0) / 60).toFixed(2));
             } else {
                 val = ex.sets.reduce((acc, s) => {
                     if (!s.completed) return acc;
+                    completedSets.push(s);
                     const setVol = (Number(s.weight) || 0) * (Number(s.reps) || 0);
                     return acc + (s.unilateral ? setVol * 2 : setVol);
                 }, 0);
             }
             if (!dateValuesMap[dateKey]) dateValuesMap[dateKey] = {};
             dateValuesMap[dateKey][ex.name] = (dateValuesMap[dateKey][ex.name] || 0) + val;
+
+            if (!dateSetsMap[dateKey]) dateSetsMap[dateKey] = {};
+            dateSetsMap[dateKey][ex.name] = completedSets;
         };
 
         const relevantWorkouts = history.filter(w =>
@@ -99,20 +105,25 @@ export default function ExerciseAnalytics() {
             });
         });
 
-        return { sortedKeys: Array.from(allDates).sort(), dateValuesMap };
+        return { sortedKeys: Array.from(allDates).sort(), dateValuesMap, dateSetsMap };
     }, [history, exerciseName, targetGroup]);
 
     // Total dates available (for pinch scaling)
     const totalDates = allRawData?.sortedKeys?.length ?? 0;
 
-    // --- Step 2: Apply window slice and build chart object ---
-    const chartData = useMemo(() => {
-        if (!allRawData) return null;
-        const { sortedKeys, dateValuesMap } = allRawData;
-
+    // --- Step 2: Slice raw keys based on window offset/size ---
+    const visibleKeys = useMemo(() => {
+        if (!allRawData) return [];
+        const { sortedKeys } = allRawData;
         const effectiveSize = windowSize ?? sortedKeys.length;
         const clampedOffset = Math.max(0, Math.min(windowOffset, sortedKeys.length - effectiveSize));
-        const visibleKeys = sortedKeys.slice(clampedOffset, clampedOffset + effectiveSize);
+        return sortedKeys.slice(clampedOffset, clampedOffset + effectiveSize);
+    }, [allRawData, windowSize, windowOffset]);
+
+    // --- Step 3: Build chart object ---
+    const chartData = useMemo(() => {
+        if (!allRawData) return null;
+        const { dateValuesMap } = allRawData;
 
         const labels = visibleKeys.map(k => { const [, m, d] = k.split('-'); return `${d}/${m}`; });
         let datasets = [];
@@ -142,7 +153,7 @@ export default function ExerciseAnalytics() {
         }
 
         return { labels, datasets };
-    }, [allRawData, windowSize, windowOffset, targetGroup, exerciseName, currentTarget, t]);
+    }, [allRawData, visibleKeys, targetGroup, exerciseName, currentTarget, t]);
 
     // --- Gesture handlers for the chart ---
     const handleChartTouchStart = (e) => {
@@ -198,6 +209,7 @@ export default function ExerciseAnalytics() {
     const prs = useMemo(() => {
         if (!exerciseName || !history) return null;
         let maxWeight = 0;
+        let maxWeightReps = 0;
         let maxSetVolume = 0;
         let bestSetWeight = 0;  // weight of the best set
         let bestSetReps = 0;    // reps of the best set
@@ -213,7 +225,12 @@ export default function ExerciseAnalytics() {
                     if (!s.completed) return;
                     const w = Number(s.weight) || 0;
                     const r = Number(s.reps) || 0;
-                    if (w > maxWeight) maxWeight = w;
+                    if (w > maxWeight) {
+                        maxWeight = w;
+                        maxWeightReps = r;
+                    } else if (w === maxWeight && r > maxWeightReps) {
+                        maxWeightReps = r;
+                    }
                     const setVol = w * r;
                     if (setVol > maxSetVolume) {
                         maxSetVolume = setVol;
@@ -249,6 +266,7 @@ export default function ExerciseAnalytics() {
 
         return {
             maxWeight: displayWeight,
+            maxWeightReps,
             bestSet: `${bestSetReps} × ${displayBestSetWeight} ${preferredUnit}`,
             maxWorkoutVolume: Math.round(maxWorkoutVolume),
             est1RM,
@@ -287,6 +305,38 @@ export default function ExerciseAnalytics() {
             tooltip: {
                 mode: 'index',
                 intersect: false,
+                callbacks: {
+                    label: function(context) {
+                        const dateKey = visibleKeys[context.dataIndex];
+                        if (!dateKey || !allRawData) return '';
+
+                        const exerciseNameForPoint = targetGroup ? context.dataset.label : exerciseName;
+                        const sets = allRawData.dateSetsMap[dateKey]?.[exerciseNameForPoint] || [];
+
+                        if (sets.length === 0) {
+                            const val = context.parsed.y;
+                            if (val === null || val === undefined) return '';
+                            const isCardio = targetGroup ? false : currentTarget === 'Cardio';
+                            if (isCardio) return `${context.dataset.label}: ${val} min`;
+                            return `${context.dataset.label}: ${val} ${preferredUnit}`;
+                        }
+
+                        // Group identical sets
+                        const groups = [];
+                        sets.forEach(s => {
+                            const displayW = preferredUnit === 'KG' ? s.weight : Math.round(s.weight * 2.20462);
+                            const setStr = `${displayW}${preferredUnit.toLowerCase()} x ${s.reps}`;
+                            if (groups.length > 0 && groups[groups.length - 1].setStr === setStr) {
+                                groups[groups.length - 1].count++;
+                            } else {
+                                groups.push({ setStr, count: 1 });
+                            }
+                        });
+                        const formatted = groups.map(g => g.count > 1 ? `${g.count} sets of ${g.setStr}` : g.setStr).join(', ');
+
+                        return `${context.dataset.label}: ${formatted}`;
+                    }
+                }
             }
         },
         scales: {
@@ -408,14 +458,21 @@ export default function ExerciseAnalytics() {
             {prs && !targetGroup && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
                     {[
-                        { label: t('pr_max_weight', { defaultValue: 'Max Weight' }), value: `${prs.maxWeight} ${prs.unit}` },
+                        { 
+                            label: t('pr_max_weight', { defaultValue: 'Max Weight' }), 
+                            value: `${prs.maxWeight} ${prs.unit}`,
+                            subValue: prs.maxWeightReps ? `for ${prs.maxWeightReps} rep${prs.maxWeightReps > 1 ? 's' : ''}` : null
+                        },
                         { label: t('pr_max_set_volume', { defaultValue: 'Best Set' }), value: prs.bestSet },
                         { label: t('pr_max_workout_volume', { defaultValue: 'Best Session' }), value: `${prs.maxWorkoutVolume} KG` },
                         ...(prs.est1RM != null ? [{ label: t('est_1rm', { defaultValue: 'Est. 1RM' }), value: `~${prs.est1RM} ${prs.unit}`, muted: true }] : []),
-                    ].map(({ label, value, muted }) => (
-                        <div key={label} className="card" style={{ padding: '0.75rem', textAlign: 'center' }}>
+                    ].map(({ label, value, subValue, muted }) => (
+                        <div key={label} className="card" style={{ padding: '0.75rem', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{label}</div>
                             <div style={{ fontSize: '1rem', fontWeight: 'bold', color: muted ? 'var(--text-muted)' : '#f59e0b' }}>{value}</div>
+                            {subValue && (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{subValue}</div>
+                            )}
                         </div>
                     ))}
                 </div>
