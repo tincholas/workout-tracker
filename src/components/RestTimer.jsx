@@ -83,8 +83,12 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
     const overlay = (
         <AnimatePresence>
             {expanded && (
-                <div
+                <motion.div
                     key="rest-timer-backdrop"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.22 }}
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -97,12 +101,7 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                         WebkitBackdropFilter: 'blur(8px)',
                     }}
                 >
-                    <motion.div
-                        key="rest-timer-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.22 }}
+                    <div
                         onClick={() => setExpanded(false)}
                         onTouchStart={onTouchStart}
                         onTouchEnd={onTouchEnd}
@@ -206,8 +205,8 @@ export default function RestTimer({ endTime, totalDuration, onComplete }) {
                         >
                             <Plus size={18} /> 1 min
                         </motion.button>
-                    </motion.div>
-                </div>
+                    </div>
+                </motion.div>
             )}
         </AnimatePresence>
     );
