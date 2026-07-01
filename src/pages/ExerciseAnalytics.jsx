@@ -8,6 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import { TARGET_COLORS } from '../store/models';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useTranslation } from 'react-i18next';
+import { fmtSeconds } from '../utils/formatTime';
 
 export default function ExerciseAnalytics() {
     const [searchParams] = useSearchParams();
@@ -208,6 +209,32 @@ export default function ExerciseAnalytics() {
     // Compute PRs for single-exercise view
     const prs = useMemo(() => {
         if (!exerciseName || !history) return null;
+
+        const isCardio = currentTarget === 'Cardio';
+        if (isCardio) {
+            let maxSeconds = 0;
+            let totalSeconds = 0;
+            let count = 0;
+            history.forEach(w => {
+                w.exercises.forEach(ex => {
+                    if (ex.name !== exerciseName) return;
+                    const sec = ex.accumulatedSeconds || 0;
+                    if (sec > 0) {
+                        count++;
+                        totalSeconds += sec;
+                        if (sec > maxSeconds) maxSeconds = sec;
+                    }
+                });
+            });
+            if (maxSeconds === 0) return null;
+            return {
+                isCardio: true,
+                maxTime: maxSeconds,
+                totalTime: totalSeconds,
+                sessions: count
+            };
+        }
+
         let maxWeight = 0;
         let maxWeightReps = 0;
         let maxSetVolume = 0;
@@ -265,6 +292,7 @@ export default function ExerciseAnalytics() {
             : null;
 
         return {
+            isCardio: false,
             maxWeight: displayWeight,
             maxWeightReps,
             bestSet: `${bestSetReps} × ${displayBestSetWeight} ${preferredUnit}`,
@@ -272,7 +300,7 @@ export default function ExerciseAnalytics() {
             est1RM,
             unit: preferredUnit
         };
-    }, [history, exerciseName, preferredUnit]);
+    }, [history, exerciseName, preferredUnit, currentTarget]);
 
     // Calculate Min/Max for Y-Axis scaling
     const yBinding = useMemo(() => {
@@ -456,25 +484,38 @@ export default function ExerciseAnalytics() {
 
             {/* PR Stats — single exercise only */}
             {prs && !targetGroup && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                    {[
-                        { 
-                            label: t('pr_max_weight', { defaultValue: 'Max Weight' }), 
-                            value: `${prs.maxWeight} ${prs.unit}`,
-                            subValue: prs.maxWeightReps ? `for ${prs.maxWeightReps} rep${prs.maxWeightReps > 1 ? 's' : ''}` : null
-                        },
-                        { label: t('pr_max_set_volume', { defaultValue: 'Best Set' }), value: prs.bestSet },
-                        { label: t('pr_max_workout_volume', { defaultValue: 'Best Session' }), value: `${prs.maxWorkoutVolume} KG` },
-                        ...(prs.est1RM != null ? [{ label: t('est_1rm', { defaultValue: 'Est. 1RM' }), value: `~${prs.est1RM} ${prs.unit}`, muted: true }] : []),
-                    ].map(({ label, value, subValue, muted }) => (
-                        <div key={label} className="card" style={{ padding: '0.75rem', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{label}</div>
-                            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: muted ? 'var(--text-muted)' : '#f59e0b' }}>{value}</div>
-                            {subValue && (
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{subValue}</div>
-                            )}
-                        </div>
-                    ))}
+                <div style={{ display: 'grid', gridTemplateColumns: prs.isCardio ? '1fr 1fr 1fr' : '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                    {prs.isCardio ? (
+                        [
+                            { label: t('max_time', { defaultValue: 'Max Time' }), value: fmtSeconds(prs.maxTime) },
+                            { label: t('total_time', { defaultValue: 'Total Time' }), value: fmtSeconds(prs.totalTime) },
+                            { label: t('sessions', { defaultValue: 'Sessions' }), value: prs.sessions },
+                        ].map(({ label, value }) => (
+                            <div key={label} className="card" style={{ padding: '0.75rem', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{label}</div>
+                                <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#f59e0b' }}>{value}</div>
+                            </div>
+                        ))
+                    ) : (
+                        [
+                            { 
+                                label: t('pr_max_weight', { defaultValue: 'Max Weight' }), 
+                                value: `${prs.maxWeight} ${prs.unit}`,
+                                subValue: prs.maxWeightReps ? `for ${prs.maxWeightReps} rep${prs.maxWeightReps > 1 ? 's' : ''}` : null
+                            },
+                            { label: t('pr_max_set_volume', { defaultValue: 'Best Set' }), value: prs.bestSet },
+                            { label: t('pr_max_workout_volume', { defaultValue: 'Best Session' }), value: `${prs.maxWorkoutVolume} KG` },
+                            ...(prs.est1RM != null ? [{ label: t('est_1rm', { defaultValue: 'Est. 1RM' }), value: `~${prs.est1RM} ${prs.unit}`, muted: true }] : []),
+                        ].map(({ label, value, subValue, muted }) => (
+                            <div key={label} className="card" style={{ padding: '0.75rem', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>{label}</div>
+                                <div style={{ fontSize: '1rem', fontWeight: 'bold', color: muted ? 'var(--text-muted)' : '#f59e0b' }}>{value}</div>
+                                {subValue && (
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{subValue}</div>
+                                )}
+                            </div>
+                        ))
+                    )}
                 </div>
             )}
 
