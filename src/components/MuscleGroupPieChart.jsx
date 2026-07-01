@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
  * Pie chart showing completed sets per muscle group over the past 28 days.
  * Cardio exercises are excluded.
  */
-export default function MuscleGroupPieChart({ history }) {
+export default function MuscleGroupPieChart({ history, currentMonth, currentYear }) {
     const { textMuted } = useThemeColors();
     const { t } = useTranslation();
 
@@ -22,20 +22,44 @@ export default function MuscleGroupPieChart({ history }) {
     const data = useMemo(() => {
         if (!history || history.length === 0) return null;
 
-        const cutoff = Date.now() - 28 * 24 * 60 * 60 * 1000;
+        const now = new Date();
+        const checkMonth = currentMonth !== undefined ? currentMonth : now.getMonth();
+        const checkYear = currentYear !== undefined ? currentYear : now.getFullYear();
+        const isCurrentMonth = checkMonth === now.getMonth() && checkYear === now.getFullYear();
+
         const setsByTarget = {};
+        let weeksDivider = 4;
 
-        history.forEach(workout => {
-            if (new Date(workout.endTime).getTime() < cutoff) return;
+        if (isCurrentMonth) {
+            const cutoff = Date.now() - 28 * 24 * 60 * 60 * 1000;
+            history.forEach(workout => {
+                if (new Date(workout.endTime).getTime() < cutoff) return;
 
-            (workout.exercises || []).forEach(ex => {
-                if (ex.target === 'Cardio') return;
-                const target = ex.target || 'Other';
-                const completedSets = (ex.sets || []).filter(s => s.completed).length;
-                if (completedSets === 0) return;
-                setsByTarget[target] = (setsByTarget[target] || 0) + completedSets;
+                (workout.exercises || []).forEach(ex => {
+                    if (ex.target === 'Cardio') return;
+                    const target = ex.target || 'Other';
+                    const completedSets = (ex.sets || []).filter(s => s.completed).length;
+                    if (completedSets === 0) return;
+                    setsByTarget[target] = (setsByTarget[target] || 0) + completedSets;
+                });
             });
-        });
+        } else {
+            const daysInMonth = new Date(checkYear, checkMonth + 1, 0).getDate();
+            weeksDivider = daysInMonth / 7;
+
+            history.forEach(workout => {
+                const d = new Date(workout.endTime);
+                if (d.getMonth() !== checkMonth || d.getFullYear() !== checkYear) return;
+
+                (workout.exercises || []).forEach(ex => {
+                    if (ex.target === 'Cardio') return;
+                    const target = ex.target || 'Other';
+                    const completedSets = (ex.sets || []).filter(s => s.completed).length;
+                    if (completedSets === 0) return;
+                    setsByTarget[target] = (setsByTarget[target] || 0) + completedSets;
+                });
+            });
+        }
 
         const targets = Object.keys(setsByTarget);
         if (targets.length === 0) return null;
@@ -43,14 +67,14 @@ export default function MuscleGroupPieChart({ history }) {
         return {
             labels: targets.map(target => t(`muscle_groups.${target}`, { defaultValue: target })),
             datasets: [{
-                data: targets.map(target => Math.round((setsByTarget[target] / 4) * 10) / 10),
+                data: targets.map(target => Math.round((setsByTarget[target] / weeksDivider) * 10) / 10),
                 backgroundColor: targets.map(target => `${getColor(target)}cc`),
                 borderColor: targets.map(target => getColor(target)),
                 borderWidth: 1.5,
                 hoverOffset: 6,
             }],
         };
-    }, [history, t]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [history, currentMonth, currentYear, t]);
 
     const options = {
         responsive: true,

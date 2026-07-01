@@ -199,6 +199,11 @@ export default function Calendar({ embedded = false }) {
         );
     }, [history]);
 
+    const isCurrentMonth = useMemo(() => {
+        const now = new Date();
+        return month === now.getMonth() && year === now.getFullYear();
+    }, [month, year]);
+
     const inner = (
         <div
             style={{
@@ -227,12 +232,14 @@ export default function Calendar({ embedded = false }) {
                 {renderCalendar()}
             </div>
 
-            {hasPie28Data && (
+            {(isCurrentMonth ? hasPie28Data : hasSetsData) && (
                 <div className="card" style={{ marginTop: '1.5rem', padding: '1rem' }}>
                     <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: 'var(--text-muted)' }}>
-                        {t('sets_per_week', { defaultValue: 'Sets Per Week (28 days)' })}
+                        {isCurrentMonth
+                            ? t('sets_per_week_28d', { defaultValue: 'Sets Per Week (28 days)' })
+                            : t('sets_per_week', { defaultValue: 'Sets Per Week' })}
                     </h3>
-                    <MuscleGroupPieChart history={history} />
+                    <MuscleGroupPieChart history={history} currentMonth={month} currentYear={year} />
                 </div>
             )}
 

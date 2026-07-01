@@ -31,12 +31,30 @@ export default function BodyWeightHistory() {
         if (entries.length === 0) return null;
 
         const unit = preferredUnit === 'LBS' ? 'lbs' : 'kg';
-        const points = entries.map(e => ({
-            date: e.date,
-            value: preferredUnit === 'LBS'
+
+        const firstEntry = entries[0];
+        const lastEntry = entries[entries.length - 1];
+
+        const firstDate = new Date(firstEntry.date + 'T00:00:00');
+        const lastDate = new Date(lastEntry.date + 'T00:00:00');
+
+        const entriesMap = {};
+        entries.forEach(e => {
+            entriesMap[e.date] = preferredUnit === 'LBS'
                 ? Math.round(e.weight * KG_TO_LBS * 10) / 10
-                : Math.round(e.weight * 10) / 10,
-        }));
+                : Math.round(e.weight * 10) / 10;
+        });
+
+        const points = [];
+        let current = new Date(firstDate);
+        while (current <= lastDate) {
+            const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+            points.push({
+                date: dateStr,
+                value: entriesMap[dateStr] ?? null
+            });
+            current.setDate(current.getDate() + 1);
+        }
 
         return { points, unit };
     }, [weightMoodLog, preferredUnit]);
@@ -58,11 +76,21 @@ export default function BodyWeightHistory() {
         });
         const rawData = visible.map(p => p.value);
 
-        // 7-day rolling average over visible slice
-        const rollingAvg = visible.map((_, i) => {
-            const window = visible.slice(Math.max(0, i - 6), i + 1).map(p => p.value);
-            if (window.length < 2) return null;
-            return Math.round((window.reduce((a, b) => a + b, 0) / window.length) * 10) / 10;
+        // 7-day rolling average over calendar days
+        const rollingAvg = visible.map(p => {
+            const pDate = new Date(p.date + 'T00:00:00');
+            const startLimit = new Date(pDate);
+            startLimit.setDate(pDate.getDate() - 6);
+
+            const windowPoints = points.filter(pt => {
+                if (pt.value === null) return false;
+                const ptDate = new Date(pt.date + 'T00:00:00');
+                return ptDate >= startLimit && ptDate <= pDate;
+            });
+
+            if (windowPoints.length === 0) return null;
+            const sum = windowPoints.reduce((acc, pt) => acc + pt.value, 0);
+            return Math.round((sum / windowPoints.length) * 10) / 10;
         });
 
         // Active bodyweight goal target lines
@@ -173,7 +201,7 @@ export default function BodyWeightHistory() {
     //     they remain visible regardless of the current window.
     const yBinding = useMemo(() => {
         if (!allRawData) return {};
-        const rawVals = allRawData.points.map(p => p.value);
+        const rawVals = allRawData.points.map(p => p.value).filter(v => v !== null);
         if (rawVals.length === 0) return {};
         // Also include any active bodyweight goal target values
         const goalVals = (goals || [])
@@ -210,7 +238,11 @@ export default function BodyWeightHistory() {
                 mode: 'index',
                 intersect: false,
                 callbacks: {
-                    label: (ctx) => `${ctx.parsed.y} ${chartData?.unit ?? ''}`,
+                    label: (ctx) => {
+                        const val = ctx.parsed.y;
+                        if (val === null || val === undefined) return '';
+                        return `${ctx.dataset.label}: ${val} ${chartData?.unit ?? ''}`;
+                    },
                 },
             },
         },
