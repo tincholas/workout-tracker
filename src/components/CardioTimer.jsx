@@ -3,9 +3,16 @@ import { Play, Square, RotateCcw } from 'lucide-react';
 import { useWorkout } from '../store/WorkoutContext';
 
 export default function CardioTimer({ exercise }) {
-    const { updateExercise, notificationPermission, requestNotificationPermission } = useWorkout();
+    const { updateExercise, notificationPermission, requestNotificationPermission, personalRecords } = useWorkout();
     const [now, setNow] = useState(Date.now());
     const intervalRef = useRef(null);
+
+    const cardioPRBest = personalRecords?.[exercise.name]?.volume || 0;
+    const prHintMinutes = React.useMemo(() => {
+        if (cardioPRBest <= 0) return null;
+        const rawMins = cardioPRBest / 60;
+        return Math.round(rawMins * 100) / 100;
+    }, [cardioPRBest]);
 
     // Input Handling
     const [localInput, setLocalInput] = useState(exercise.targetTimeMinutes || '');
@@ -122,6 +129,14 @@ export default function CardioTimer({ exercise }) {
         setLocalInput(e.target.value.replace(',', '.'));
     };
 
+    const hintStyle = {
+        fontSize: '0.65rem',
+        color: '#eab308',
+        marginTop: '4px',
+        fontWeight: 600,
+        letterSpacing: '0.02em',
+    };
+
     // Visuals
     // Primary/Success until target reached
     const displayColor = isTargetMet ? 'var(--color-success)' : 'var(--text-primary)';
@@ -144,6 +159,9 @@ export default function CardioTimer({ exercise }) {
                         disabled={exercise.timerState === 'running'}
                         style={{ padding: '0.8rem', fontSize: '1.1rem' }}
                     />
+                    {isFocused && prHintMinutes != null && (
+                        <div style={hintStyle}>🏆 > {prHintMinutes} min for PR</div>
+                    )}
                 </div>
 
                 <button

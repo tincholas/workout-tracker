@@ -234,7 +234,10 @@ export default function CreateGoalModal({ onClose }) {
                                     (goalType === 'exercise' && targetMetric === 'reps' ? 'e.g. 15' : `e.g. ${preferredUnit === 'LBS' ? '132' : '60'}`)
                             }
                             value={targetDisplay}
-                            onChange={e => setTargetDisplay(e.target.value.replace(',', '.'))}
+                            onChange={e => {
+                                const val = e.target.value.replace(',', '.');
+                                setTargetDisplay(val.replace(/^0+(?=\d)/, ''));
+                            }}
                         />
                     </div>
                 )}

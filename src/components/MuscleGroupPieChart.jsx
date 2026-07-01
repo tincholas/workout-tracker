@@ -55,6 +55,7 @@ export default function MuscleGroupPieChart({ history }) {
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
             legend: {
                 position: 'right',

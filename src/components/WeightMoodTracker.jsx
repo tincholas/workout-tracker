@@ -194,7 +194,10 @@ export default function WeightMoodTracker() {
                                 type="text"
                                 inputMode="decimal"
                                 value={displayWeight}
-                                onChange={e => setDisplayWeight(e.target.value.replace(',', '.'))}
+                                onChange={e => {
+                                    const val = e.target.value.replace(',', '.');
+                                    setDisplayWeight(val.replace(/^0+(?=\d)/, ''));
+                                }}
                                 onBlur={handleWeightBlur}
                                 step={step}
                                 min={kgToDisplay(MIN_WEIGHT_KG, preferredUnit)}

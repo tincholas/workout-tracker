@@ -38,7 +38,10 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
         onUpdate({ [field]: value });
     };
 
-    const handleWeightChange = (e) => { setTempValue(e.target.value.replace(',', '.')); };
+    const handleWeightChange = (e) => {
+        const val = e.target.value.replace(',', '.');
+        setTempValue(val.replace(/^0+(?=\d)/, ''));
+    };
 
     const handleWeightFocus = () => {
         prevWeightRef.current = set.weight;
@@ -70,7 +73,10 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
         return set.reps;
     };
 
-    const handleRepsChange = (e) => { setTempReps(e.target.value.replace(',', '.')); };
+    const handleRepsChange = (e) => {
+        const val = e.target.value.replace(',', '.');
+        setTempReps(val.replace(/^0+(?=\d)/, ''));
+    };
     const handleRepsFocus = () => { prevRepsRef.current = set.reps; setTempReps(''); setRepsFocused(true); };
     const handleRepsBlur = () => {
         setRepsFocused(false);
@@ -206,7 +212,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
                         backgroundColor: 'rgba(255,255,255,0.05)',
                         color: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'var(--text-primary)'
                     }}
-                    placeholder={isBodyweight ? `+ ${preferredUnit}` : preferredUnit}
+                    placeholder=""
                     value={getDisplayWeight()}
                     onChange={handleWeightChange}
                     onFocus={handleWeightFocus}
@@ -233,7 +239,7 @@ export default function SetRow({ set, index, onUpdate, onDelete, isPR, isUnilate
                         backgroundColor: 'rgba(255,255,255,0.05)',
                         color: set.completed ? (isPR ? '#eab308' : 'var(--color-success)') : 'var(--text-primary)'
                     }}
-                    placeholder="reps"
+                    placeholder=""
                     value={getDisplayReps()}
                     onChange={handleRepsChange}
                     onFocus={handleRepsFocus}
