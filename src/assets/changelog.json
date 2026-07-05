@@ -1,5 +1,11 @@
 [
   {
+    "version": "0.0.73",
+    "changes": [
+      "show weight trend"
+    ]
+  },
+  {
     "version": "0.0.72",
     "changes": [
       "fixed weight conversion in routine history"
