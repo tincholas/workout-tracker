@@ -326,6 +326,7 @@ export default function Calendar({ embedded = false }) {
                                                 ) : (
                                                     ex.sets.map((s, i) => {
                                                         const isPR = prRecord && prRecord.setId === s.id;
+                                                        const displayWeight = preferredUnit === 'KG' ? s.weight : Math.round(s.weight * 2.20462);
 
                                                         return s.completed && (
                                                             <span key={i} style={{
@@ -340,7 +341,7 @@ export default function Calendar({ embedded = false }) {
                                                                 color: isPR ? '#eab308' : 'var(--text-primary)',
                                                                 border: isPR ? '1px solid rgba(234, 179, 8, 0.2)' : 'none'
                                                             }}>
-                                                                {s.weight}{preferredUnit} x {s.reps}
+                                                                {displayWeight}{preferredUnit} x {s.reps}
                                                                 {isPR && <Trophy size={12} color="#eab308" />}
                                                             </span>
                                                         );
