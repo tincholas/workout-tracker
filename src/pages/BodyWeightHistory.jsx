@@ -18,6 +18,7 @@ export default function BodyWeightHistory() {
     // Date window state (null = show all)
     const [windowSize, setWindowSize] = React.useState(null);
     const [windowOffset, setWindowOffset] = React.useState(0);
+    const [changeTimeframe, setChangeTimeframe] = React.useState('7d');
     const touchRef = useRef({});
 
     // --- Build all raw data points from weightMoodLog ---
@@ -60,6 +61,45 @@ export default function BodyWeightHistory() {
     }, [weightMoodLog, preferredUnit]);
 
     const totalDates = allRawData?.points?.length ?? 0;
+
+    const stats = useMemo(() => {
+        if (!allRawData || !allRawData.points) return null;
+        const validPoints = allRawData.points.filter(p => p.value !== null);
+        if (validPoints.length < 2) return null;
+
+        const latest = validPoints[validPoints.length - 1];
+        const latestDate = new Date(latest.date + 'T00:00:00');
+
+        const getPointDaysAgo = (days) => {
+            const targetDate = new Date(latestDate);
+            targetDate.setDate(targetDate.getDate() - days);
+            let closest = null;
+            let minDiff = Infinity;
+            for (const p of validPoints) {
+                const d = new Date(p.date + 'T00:00:00');
+                const diff = Math.abs(d - targetDate);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closest = p;
+                }
+            }
+            return closest;
+        };
+
+        const point7d = getPointDaysAgo(7);
+        const point30d = getPointDaysAgo(30);
+
+        const diff7d = point7d ? latest.value - point7d.value : 0;
+        const diff30d = point30d ? latest.value - point30d.value : 0;
+        const avgDailyChange7d = diff7d / 7;
+
+        return {
+            diff7d,
+            diff30d,
+            avgDailyChange7d,
+            unit: allRawData.unit
+        };
+    }, [allRawData]);
 
     // --- Apply window and compute rolling average ---
     const chartData = useMemo(() => {
@@ -282,6 +322,32 @@ export default function BodyWeightHistory() {
                     {t('progression', { defaultValue: 'Progression' })}
                 </span>
             </h1>
+
+            {stats && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div 
+                        className="card" 
+                        style={{ padding: '1rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                        onClick={() => setChangeTimeframe(prev => prev === '7d' ? '30d' : '7d')}
+                    >
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>
+                            {changeTimeframe === '7d' ? t('change_last_7_days', { defaultValue: 'Change (7d)' }) : t('change_past_month', { defaultValue: 'Change (30d)' })}
+                        </span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                            {changeTimeframe === '7d' ? (stats.diff7d > 0 ? '+' : '') + stats.diff7d.toFixed(1) : (stats.diff30d > 0 ? '+' : '') + stats.diff30d.toFixed(1)} {stats.unit}
+                        </span>
+                    </div>
+
+                    <div className="card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>
+                            {t('avg_daily_change', { defaultValue: 'Avg Daily Change (7d)' })}
+                        </span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                            {stats.avgDailyChange7d > 0 ? '+' : ''}{stats.avgDailyChange7d.toFixed(2)} {stats.unit}/d
+                        </span>
+                    </div>
+                </div>
+            )}
 
             <div
                 className="card"
