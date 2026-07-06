@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.0.74",
+    "changes": [
+      "-",
+      "fixed bodyweight exercise tracking and PRs"
+    ]
+  },
+  {
     "version": "0.0.73",
     "changes": [
       "show weight trend"
