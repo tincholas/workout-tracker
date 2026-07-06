@@ -9,6 +9,7 @@ import { TARGET_COLORS } from '../store/models';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useTranslation } from 'react-i18next';
 import { fmtSeconds } from '../utils/formatTime';
+import { calculateEffectiveWeight } from '../utils/volumeCalc';
 
 export default function ExerciseAnalytics() {
     const [searchParams] = useSearchParams();
@@ -68,7 +69,7 @@ export default function ExerciseAnalytics() {
         const dateValuesMap = {};
         const dateSetsMap = {};
 
-        const processExercise = (ex, dateKey) => {
+        const processExercise = (ex, dateKey, workout) => {
             let val = 0;
             const completedSets = [];
             if (ex.target === 'Cardio') {
@@ -77,7 +78,8 @@ export default function ExerciseAnalytics() {
                 val = ex.sets.reduce((acc, s) => {
                     if (!s.completed) return acc;
                     completedSets.push(s);
-                    const setVol = (Number(s.weight) || 0) * (Number(s.reps) || 0);
+                    const effectiveWeight = calculateEffectiveWeight(s.weight, ex.bodyweight, workout.bodyWeightSnapshot);
+                    const setVol = effectiveWeight * (Number(s.reps) || 0);
                     return acc + (s.unilateral ? setVol * 2 : setVol);
                 }, 0);
             }
@@ -102,7 +104,7 @@ export default function ExerciseAnalytics() {
             allDates.add(key);
             w.exercises.forEach(ex => {
                 if (targetGroup ? ex.target === targetGroup : ex.name === exerciseName)
-                    processExercise(ex, key);
+                    processExercise(ex, key, w);
             });
         });
 
@@ -244,31 +246,32 @@ export default function ExerciseAnalytics() {
         let best1RMReps = 0;    // reps used for 1RM estimate
         let maxWorkoutVolume = 0;
 
-        history.forEach(w => {
+        history.forEach(workout => {
             let sessionVolume = 0;
-            w.exercises.forEach(ex => {
+            workout.exercises.forEach(ex => {
                 if (ex.name !== exerciseName) return;
                 ex.sets.forEach(s => {
                     if (!s.completed) return;
-                    const w = Number(s.weight) || 0;
+                    const rawW = Number(s.weight) || 0;
+                    const effectiveW = calculateEffectiveWeight(rawW, ex.bodyweight, workout.bodyWeightSnapshot);
                     const r = Number(s.reps) || 0;
-                    if (w > maxWeight) {
-                        maxWeight = w;
+                    if (effectiveW > maxWeight) {
+                        maxWeight = effectiveW;
                         maxWeightReps = r;
-                    } else if (w === maxWeight && r > maxWeightReps) {
+                    } else if (effectiveW === maxWeight && r > maxWeightReps) {
                         maxWeightReps = r;
                     }
-                    const setVol = w * r;
+                    const setVol = effectiveW * r;
                     if (setVol > maxSetVolume) {
                         maxSetVolume = setVol;
-                        bestSetWeight = w;
+                        bestSetWeight = effectiveW;
                         bestSetReps = r;
                     }
                     // Best Epley 1RM: weight * (1 + reps/30) — only valid for r >= 1
                     if (r >= 1) {
-                        const est = w * (1 + r / 30);
+                        const est = effectiveW * (1 + r / 30);
                         const currentBest = best1RMWeight * (1 + best1RMReps / 30);
-                        if (est > currentBest) { best1RMWeight = w; best1RMReps = r; }
+                        if (est > currentBest) { best1RMWeight = effectiveW; best1RMReps = r; }
                     }
                     sessionVolume += setVol;
                 });

@@ -493,7 +493,7 @@ export const WorkoutProvider = ({ children }) => {
         if (lastSession) {
             // Copy exercises from history
             workout.exercises = lastSession.exercises.map(ex => ({
-                ...createExercise(ex.name, ex.target),
+                ...createExercise(ex.name, ex.target, !!ex.bodyweight),
                 targetTimeMinutes: ex.targetTimeMinutes || 0,
                 unilateral: ex.unilateral ?? false,
                 sets: ex.sets.map(s => ({
